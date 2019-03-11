@@ -1,0 +1,57 @@
+#!/bin/bash
+
+function usage {
+    echo "USAGE: ";
+    echo "$0 MakeImage -t tumor_bam -n normal_bam -m mto_result -s sample_name"
+    echo "$0 Train -s sample_name"
+    echo "$0 Predict -b base_model(optional) -s sample_name"
+    exit 0;
+}
+
+PARAM="p:t:n:m:s:b:h";
+
+OPT_B="trained_model"
+OPT_P=$1
+
+while getopts $PARAM opt; do
+    case $opt in
+        p)
+            OPT_P=$OPTARG;
+            ;;
+        t)
+            OPT_T=$OPTARG;
+            ;;
+        n)
+            OPT_N=$OPTARG;
+            ;;
+        m)
+            OPT_M=$OPTARG;
+            ;;
+        s)
+            OPT_S=$OPTARG;
+            ;;
+        b)
+            OPT_B=$OPTARG;
+            ;;
+        h)
+            usage;
+            ;;
+    esac
+done
+
+command=$OPT_P # makeimage, train, prediction
+
+if [ "$command" = "MakeImage" ];then
+    #echo "MakeImage"
+    python codes/MakeImage.py $OPT_T $OPT_N $OPT_M $OPT_S 1000 100
+    python -c "import glob; print('\n'.join(glob.glob('./{$OPT_S}/images/{$OPT_S}_*.pkl')))" > ./ref/{$OPT_S}.txt
+elif [ "$command" = "Train" ];then
+    python codes/basemodel.py main_learner_fgen $OPT_S base_model $OPT_S
+
+elif [ "$command" = "Predict" ];then
+    python codes/basemodel.py base_prediction $OPT_S $OPT_B $OPT_S
+
+
+else
+    usage;
+fi
