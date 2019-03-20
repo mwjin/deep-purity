@@ -21,12 +21,13 @@ def main():
     """
     # job scheduler settings
     queue = '24_730.q'
-    is_test = False
+    is_test = True
     job_name_prefix = 'Minu.In.Silico.Mix'
     log_dir = '%s/log/%s/%s' % (PROJECT_DIR, job_name_prefix, time_stamp())
 
     # path settings
     samtools = '/extdata6/Doyeon/anaconda3/bin/samtools'
+    java = '/extdata6/Doyeon/anaconda3/envs/deep-purity/bin/java'
     picard = '/extdata6/Beomman/bins/picard/build/libs/picard.jar'
     tumor_bam_path = '/extdata6/Beomman/raw-data/tcga-benchmark4/HCC1143.TUMOR.30x.compare.bam'
     norm_bam_path = '/extdata6/Beomman/raw-data/tcga-benchmark4/HCC1143.NORMAL.30x.compare.bam'
@@ -38,15 +39,15 @@ def main():
     os.makedirs(temp_dir, exist_ok=True)
 
     jobs = []  # a list of the 'Job' class
-    norm_contam_ratios = [0.4]
+    norm_contam_pcts = [2.5, 5, 7.5, 10, 20, 30, 40, 50, 60, 70, 80, 90, 95]
 
-    for norm_ratio in norm_contam_ratios:
-        tumor_ratio = 1.0 - norm_ratio
-        norm_pct = int(norm_ratio * 100)
-        tumor_pct = int(tumor_ratio * 100)
+    for norm_pct in norm_contam_pcts:
+        tumor_pct = 100 - norm_pct
+        norm_ratio = norm_pct / 100
+        tumor_ratio = tumor_pct / 100
 
         # in-loop path settings
-        tag = 'n%dt%d' % (norm_pct, tumor_pct)
+        tag = 'n%st%s' % (norm_pct, tumor_pct)
         result_bam_path = result_bam_path_format % tag
         tumor_temp_bam_path = '%s/%s' % (temp_dir, os.path.basename(tumor_bam_path))
         tumor_temp_bam_path = tumor_temp_bam_path.replace('.bam', '.%d%%.bam' % tumor_pct)
@@ -59,8 +60,8 @@ def main():
         # extracting some reads from the normal bam file
         cmd += '%s view -b -s %.1f %s > %s;' % (samtools, (SEED + norm_ratio), norm_bam_path, norm_temp_bam_path)
         # merging
-        cmd += 'java -jar %s MergeSamFiles I=%s I=%s O=%s;' % \
-               (picard, tumor_temp_bam_path, norm_temp_bam_path, result_bam_path)
+        cmd += '%s -jar %s MergeSamFiles I=%s I=%s O=%s;' % \
+               (java, picard, tumor_temp_bam_path, norm_temp_bam_path, result_bam_path)
         # indexing
         cmd += 'samtools index %s;' % result_bam_path
 
