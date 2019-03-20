@@ -22,19 +22,23 @@ def main():
     # job scheduler settings
     queue = '24_730.q'
     is_test = True
-    job_name_prefix = 'Minu.In.Silico.Mix'
+    job_name_prefix = 'Minu.In.Silico.Bam.Mix'
     log_dir = '%s/log/%s/%s' % (PROJECT_DIR, job_name_prefix, time_stamp())
+
+    # param settings
+    cell_line = 'HCC1954'
+    depth = '30x'
 
     # path settings
     samtools = '/extdata6/Doyeon/anaconda3/bin/samtools'
     java = '/extdata6/Doyeon/anaconda3/envs/deep-purity/bin/java'
     picard = '/extdata6/Beomman/bins/picard/build/libs/picard.jar'
-    tumor_bam_path = '/extdata6/Beomman/raw-data/tcga-benchmark4/HCC1143.TUMOR.30x.compare.bam'
-    norm_bam_path = '/extdata6/Beomman/raw-data/tcga-benchmark4/HCC1143.NORMAL.30x.compare.bam'
+    tumor_bam_path = '/extdata6/Beomman/raw-data/tcga-benchmark4/%s.TUMOR.%s.compare.bam' % (cell_line, depth)
+    norm_bam_path = '/extdata6/Beomman/raw-data/tcga-benchmark4/%s.NORMAL.%s.compare.bam' % (cell_line, depth)
 
     # output settings
     result_dir = '%s/results/mixed-bam' % PROJECT_DIR
-    result_bam_path_format = '{0}/HCC1143.30x.%s.bam'.format(result_dir)
+    result_bam_path_format = '{0}/{1}.{2}.%s.bam'.format(result_dir, cell_line, depth)
     temp_dir = '%s/temp' % result_dir
     os.makedirs(temp_dir, exist_ok=True)
 
@@ -50,9 +54,9 @@ def main():
         tag = 'n%st%s' % (norm_pct, tumor_pct)
         result_bam_path = result_bam_path_format % tag
         tumor_temp_bam_path = '%s/%s' % (temp_dir, os.path.basename(tumor_bam_path))
-        tumor_temp_bam_path = tumor_temp_bam_path.replace('.bam', '.%d%%.bam' % tumor_pct)
+        tumor_temp_bam_path = tumor_temp_bam_path.replace('.bam', '.%s%%.bam' % tumor_pct)
         norm_temp_bam_path = '%s/%s' % (temp_dir, os.path.basename(norm_bam_path))
-        norm_temp_bam_path = norm_temp_bam_path.replace('.bam', '.%d%%.bam' % norm_pct)
+        norm_temp_bam_path = norm_temp_bam_path.replace('.bam', '.%s%%.bam' % norm_pct)
 
         cmd = ''
         # extracting some reads from the tumor bam file
@@ -68,7 +72,7 @@ def main():
         if is_test:
             print(cmd)
         else:
-            one_job_name = '%s.%s' % (job_name_prefix, tag)
+            one_job_name = '%s.%s.%s.%s' % (job_name_prefix, cell_line, depth, tag)
             one_job = Job(one_job_name, cmd)
             jobs.append(one_job)
 
