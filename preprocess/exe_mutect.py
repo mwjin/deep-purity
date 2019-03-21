@@ -24,6 +24,7 @@ def main():
     # job scheduler settings
     queue = '24_730.q'
     is_test = True
+    prev_job_prefix = 'Minu.In.Silico.Bam.Mix'
     job_name_prefix = 'Minu.Mutect'
     log_dir = '%s/log/%s/%s' % (PROJECT_DIR, job_name_prefix, time_stamp())
 
@@ -70,8 +71,9 @@ def main():
         if is_test:
             print(cmd)
         else:
+            prev_job_name = '%s.%s.%s.%s' % (prev_job_prefix, cell_line, depth, tag)
             one_job_name = '%s.%s.%s.%s' % (job_name_prefix, cell_line, depth, tag)
-            one_job = Job(one_job_name, cmd)
+            one_job = Job(one_job_name, cmd, hold_jid=prev_job_name)
             jobs.append(one_job)
 
     if not is_test:
