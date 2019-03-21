@@ -58,16 +58,11 @@ def main():
         norm_temp_bam_path = '%s/%s' % (temp_dir, os.path.basename(norm_bam_path))
         norm_temp_bam_path = norm_temp_bam_path.replace('.bam', '.%s%%.bam' % norm_pct)
 
-        cmd = ''
-        # extracting some reads from the tumor bam file
-        cmd += '%s view -b -s %.1f %s > %s;' % (samtools, (SEED + tumor_ratio), tumor_bam_path, tumor_temp_bam_path)
-        # extracting some reads from the normal bam file
-        cmd += '%s view -b -s %.1f %s > %s;' % (samtools, (SEED + norm_ratio), norm_bam_path, norm_temp_bam_path)
-        # merging
-        cmd += '%s -jar %s MergeSamFiles I=%s I=%s O=%s;' % \
-               (java, picard, tumor_temp_bam_path, norm_temp_bam_path, result_bam_path)
-        # indexing
-        cmd += 'samtools index %s;' % result_bam_path
+        cmd = f"{samtools} view -b -s {(SEED + tumor_ratio):.3f} {tumor_bam_path} > {tumor_temp_bam_path};" \
+              f"{samtools} view -b -s {(SEED + norm_ratio):.3f} {norm_bam_path} > {norm_temp_bam_path};" \
+              f"{java} -jar {picard} MergeSamFiles I={tumor_temp_bam_path} I={norm_temp_bam_path} " \
+              f"O={result_bam_path};" \
+              f"{samtools} index {result_bam_path};"
 
         if is_test:
             print(cmd)
