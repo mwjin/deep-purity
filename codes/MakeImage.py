@@ -15,14 +15,12 @@ class MakeCNNImage(object):
         self.tumor_ = sys.argv[3]
         self.normal_ = sys.argv[4]
         self.out_pkl_ = sys.argv[5]
-        self.mto_ = sys.argv[6]
-        self.width = int(sys.argv[7])
-        self.hist_height = int(sys.argv[8])
-
-        dic_vaf = self.load_vaf_from_mto(self.mto_)
+        self.width = int(sys.argv[6])
+        self.hist_height = int(sys.argv[7])
 
         list_pos = self.load_pos_file(self.pos_)
-        dic_array = self.fetch_image_arrays(list_pos, self.tumor_, self.normal_, dic_vaf)
+        dic_array = self.fetch_image_arrays(list_pos, self.tumor_, self.normal_)
+
         if dic_array['read_image'].shape != (50, self.width, 9):
             print(dic_array['read_image'].shape)
             sys.exit()
@@ -32,8 +30,6 @@ class MakeCNNImage(object):
         dic_array['true_ratio'] = self.true_ratio
         self.dump_array(dic_array, self.out_pkl_)
 
-        return
-
     def dump_array(self, dic_array, out_pkl_):
 
         out_pkl = open(out_pkl_, 'wb')
@@ -41,28 +37,6 @@ class MakeCNNImage(object):
         out_pkl.close()
 
         return
-
-    def load_vaf_from_mto(self, mto_):
-
-        dic_vaf = dict() ## {0.0:1, ...}
-
-        mto = open(mto_, 'r')
-        mto_ver = mto.readline().strip('\n').split('\t')
-        overhead = mto.readline().strip('\n').split('\t')
-        contig_idx = overhead.index('contig')
-        pos_idx = overhead.index('position')
-        vaf_idx = overhead.index('tumor_f')
-        for line in mto:
-            cols = line.strip('\n').split('\t')
-
-            contig = cols[contig_idx]
-            pos = int(cols[pos_idx])
-            vaf = float(cols[vaf_idx])
-
-            dic_vaf[(contig, pos)] = vaf
-        mto.close()
-
-        return dic_vaf
 
     def load_pos_file(self, pos_):
 
@@ -74,7 +48,8 @@ class MakeCNNImage(object):
             zero_based_pos = int(cols[1])-1
             ref = cols[2]
             alt = cols[3]
-            list_pos.append((contig, zero_based_pos, ref, alt))
+            vaf = float(cols[5])
+            list_pos.append((contig, zero_based_pos, ref, alt, vaf))
         pos_file.close()
 
         return list_pos
@@ -90,14 +65,14 @@ class MakeCNNImage(object):
 
         return list_raw_read
 
-    def fetch_image_arrays(self, list_pos, tumor_, normal_, dic_vaf):
+    def fetch_image_arrays(self, list_pos, tumor_, normal_):
 
         list_array = []
         list_vaf = []
         for pos in list_pos:
             contig = pos[0]
             zero_based_pos = pos[1]
-            vaf = dic_vaf[(contig, zero_based_pos+1)]
+            vaf = pos[4]
             list_vaf.append(vaf)
 
             list_tumor_read = self.fetch_raw_reads_from_bam(tumor_, contig, zero_based_pos)
