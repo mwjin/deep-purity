@@ -4,104 +4,48 @@ import sys
 import pysam
 import numpy
 import pickle
+import time
 
 class MakeCNNImage(object):
 
     def __init__(self):
-        
-        self.tumor_ = sys.argv[1]
-        self.normal_ = sys.argv[2]
-        self.mto_ = sys.argv[3]
-        self.sample_name = sys.argv[4]
-        self.width = int(sys.argv[5])
-        self.hist_height = int(sys.argv[6])
-        
+
+        self.pos_ = sys.argv[1]
+        self.true_ratio = float(sys.argv[2])
+        self.tumor_ = sys.argv[3]
+        self.normal_ = sys.argv[4]
+        self.out_pkl_ = sys.argv[5]
+        self.mto_ = sys.argv[6]
+        self.width = int(sys.argv[7])
+        self.hist_height = int(sys.argv[8])
+
         dic_vaf = self.load_vaf_from_mto(self.mto_)
 
-        list_path = self.mto_to_position_file(self.mto_)
-        for idx, path_ in enumerate(list_path):
-            list_pos = self.load_pos_file(path_)
-            dic_array = self.fetch_image_arrays(list_pos, self.tumor_, self.normal_, dic_vaf)
-            
-            if dic_array['read_image'].shape != (50, self.width, 9):
-                print(dic_array['read_image'].shape)
-                sys.exit()
-            if dic_array['vaf_hist_image'].shape != (self.hist_height, 101, 1):
-                print(dic_array['vaf_hist_image'].shape)
-                sys.exit()
-
-            out_pkl_ = '../%s/images/%s_image_%s.pkl' %(self.sample_name, self.sample_name, idx)
-            self.dump_array(dic_array, self.out_pkl_)
+        list_pos = self.load_pos_file(self.pos_)
+        dic_array = self.fetch_image_arrays(list_pos, self.tumor_, self.normal_, dic_vaf)
+        if dic_array['read_image'].shape != (50, self.width, 9):
+            print(dic_array['read_image'].shape)
+            sys.exit()
+        if dic_array['vaf_hist_image'].shape != (self.hist_height, 101, 1):
+            print(dic_array['vaf_hist_image'].shape)
+            sys.exit()
+        dic_array['true_ratio'] = self.true_ratio
+        self.dump_array(dic_array, self.out_pkl_)
 
         return
 
-    def load_mto_file(self, mto_):
-    
-        normal_contigs = ['%d' %(contig+1) for contig in range(22)] + ['X', 'Y']
-        list_variant = []
-        
-        mto = open(mto_, 'r')
-        mto_ver =  mto.readline().strip('\n')
-        header = mto.readline().strip('\n').split('\t')
-        
-        contig_idx = header.index('contig')
-        pos_idx = header.index('position')
-        ref_idx = header.index('ref_allele')
-        alt_idx = header.index('alt_allele')
-        lodt_idx = header.index('t_lod_fstar')
-        judgement_idx = header.index('judgement')
-        
-        for line in mto:
-            cols = line.strip('\n').split('\t')
-            contig = cols[contig_idx]
-            if contig not in normal_contigs:
-                continue
-            one_based_pos = int(cols[pos_idx])
-            ref = cols[ref_idx]
-            alt = cols[alt_idx]
-            lodt = float(cols[lodt_idx])
-            judgement = cols[judgement_idx]
-            list_variant.append((contig, one_based_pos, ref, alt, lodt, judgement))
-        mto.close()
-
-        return list_variant
-
-    def mto_to_position_file(self, mto_):
-        
-        list_path = []
-        list_variant = load_mto_file(mto_)
-        list_pass = [x for x in list_variant if x[6] == 'KEEP']
-        for idx in range(1000):
-            if len(list_pass) > 10000:
-                list_sampled_idx = numpy.random.choice(range(len(list_pass)), size=10000, replace=False)
-                list_mutect_sampled = [ list_pass[x] for x in list_sampled_idx ]
-            else:
-                list_sampled_idx = numpy.random.choice(range(len(list_pass)), size=10000)
-                list_mutect_sampled = [ list_pass[x] for x in list_sampled_idx ]
-                
-            list_mutect_sampled = sorted(list_mutect_sampled, key=lambda x:x[4], reverse=True)[:1000]
-            
-            out_ = '../%s/pos/%s_positions_%s.tsv' %(self.sample_name, self.sample_name, idx)
-            list_path.append(out_)
-            out = open(out_, 'w')
-            for x in list_mutect_sampled:
-                out.write('%s\t%s\t%s\t%s\t%s\t%s\n' %(x[0],x[1],x[2],x[3],x[4],x[5]))
-            out.close()
-
-        return list_path
-
     def dump_array(self, dic_array, out_pkl_):
-        
+
         out_pkl = open(out_pkl_, 'wb')
         pickle.dump(dic_array, out_pkl, protocol=pickle.HIGHEST_PROTOCOL)
         out_pkl.close()
-    
+
         return
-    
+
     def load_vaf_from_mto(self, mto_):
-        
+
         dic_vaf = dict() ## {0.0:1, ...}
-        
+
         mto = open(mto_, 'r')
         mto_ver = mto.readline().strip('\n').split('\t')
         overhead = mto.readline().strip('\n').split('\t')
@@ -110,18 +54,18 @@ class MakeCNNImage(object):
         vaf_idx = overhead.index('tumor_f')
         for line in mto:
             cols = line.strip('\n').split('\t')
-            
+
             contig = cols[contig_idx]
             pos = int(cols[pos_idx])
             vaf = float(cols[vaf_idx])
 
             dic_vaf[(contig, pos)] = vaf
         mto.close()
-        
+
         return dic_vaf
 
     def load_pos_file(self, pos_):
-        
+
         list_pos = []
         pos_file = open(pos_, 'r')
         for line in pos_file:
@@ -132,11 +76,11 @@ class MakeCNNImage(object):
             alt = cols[3]
             list_pos.append((contig, zero_based_pos, ref, alt))
         pos_file.close()
-        
+
         return list_pos
 
     def fetch_raw_reads_from_bam(self, tumor_, contig, zero_based_pos):
-        
+
         list_raw_read = []
         tumor_data = pysam.AlignmentFile(tumor_, 'rb')
         for pileupcolumn in tumor_data.pileup(contig, zero_based_pos, zero_based_pos+1, truncate=True, stepper='all'): ## filter pcr dup, qc fail, ...
@@ -147,7 +91,7 @@ class MakeCNNImage(object):
         return list_raw_read
 
     def fetch_image_arrays(self, list_pos, tumor_, normal_, dic_vaf):
-        
+
         list_array = []
         list_vaf = []
         for pos in list_pos:
@@ -259,7 +203,7 @@ class MakeCNNImage(object):
 
         for vaf in list_vaf:
             dic_vaf[round(vaf, 2)] += 1
-        
+
         total_count = sum(dic_vaf.values())
         for key in dic_vaf.keys():
             dic_vaf[key] = dic_vaf[key]/total_count
@@ -267,7 +211,7 @@ class MakeCNNImage(object):
         list_vaf2 = []
         for vaf in sorted(dic_vaf.keys()):
             list_vaf2.append((vaf, dic_vaf[vaf]))
-        
+
         #print(list_vaf2)
         #print(sum([x[1] for x in list_vaf2]))
 
@@ -292,4 +236,6 @@ class MakeCNNImage(object):
 
         return dic_array
 
+print(time.time())
 MakeCNNImage()
+print(time.time())
