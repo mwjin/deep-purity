@@ -1,4 +1,4 @@
-#!/extdata6/Beomman/bins/anaconda3/bin/python
+#!/extdata6/Doyeon/anaconda3/envs/deep-purity/bin/python3.6
 
 import sys
 import pysam
@@ -236,6 +236,6 @@ class MakeCNNImage(object):
 
         return dic_array
 
-print(time.time())
+print(time.ctime())
 MakeCNNImage()
-print(time.time())
+print(time.ctime())
