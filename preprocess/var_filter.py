@@ -42,7 +42,7 @@ class _Variant:
             header_fields = header.strip().split('\t')
 
             chrom_idx = header_fields.index('contig')
-            pos_idx = header_fields.index('pos')
+            pos_idx = header_fields.index('position')
             ref_idx = header_fields.index('ref_allele')
             alt_idx = header_fields.index('alt_allele')
             lodt_idx = header_fields.index('t_lod_fstar')
