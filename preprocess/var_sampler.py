@@ -146,7 +146,7 @@ def make_rand_sample_var_file(out_tsv_path, in_tsv_path, num_rand_var, num_top_l
         print(header, file=out_tsv_file)
 
         for i in range(num_top_lod_var):
-            print(variants[i], file=out_tsv_file)
+            print(random_variants[i], file=out_tsv_file)
 
 
 if __name__ == '__main__':
