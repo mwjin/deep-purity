@@ -4,7 +4,7 @@ Execute Mutect (Cibulskis et al., 2013, Nat. Biotech.) to call the variants from
 Called variants are going to be used to make images for our CNN.
 
 * Prerequisite
-    1. Run bam_mixer.py
+    1. Run 01_bam_mixer.py
 """
 
 from lab.job import Job, qsub_sge

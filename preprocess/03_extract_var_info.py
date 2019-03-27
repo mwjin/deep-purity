@@ -3,7 +3,7 @@
 From MTO file, extract and store essential information of the passed variants as TSV file (Variant summary file).
 
 * Prerequisite
-    1. Run exe_mutect.py
+    1. Run 02_exe_mutect.py
 """
 from lab.job import Job, qsub_sge
 from lab.utils import time_stamp

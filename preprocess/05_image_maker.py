@@ -3,7 +3,7 @@
 Make images by parsing tsv files of variant samples via SGE job scheduler
 
 * Prerequisite
-    1. Run preprocess.var_sampler.py
+    1. Run preprocess.04_make_sample.py
 """
 from lab.job import Job, qsub_sge
 from lab.utils import time_stamp
@@ -21,7 +21,7 @@ def main():
     """
     # job scheduler settings
     queue = '24_730.q'
-    is_test = True
+    is_test = False
     prev_job_prefix = 'Minu.Var.Sampling'
     job_name_prefix = 'Minu.Make.Var.Image'
     log_dir = f'{PROJECT_DIR}/log/{job_name_prefix}/{time_stamp()}'
@@ -53,7 +53,7 @@ def main():
 
     # make jobs
     jobs = []  # a list of the 'Job' class
-    norm_contam_pcts = [5, 10, 20, 30, 40, 50, 60, 70, 80, 90, 95]
+    norm_contam_pcts = [2.5, 5, 7.5, 10, 20, 30, 40, 50, 60, 70, 80, 90, 95]
 
     for norm_pct in norm_contam_pcts:
         tumor_pct = 100 - norm_pct
@@ -61,7 +61,7 @@ def main():
         norm_contam_ratio = norm_pct / 100
 
         # in-loop path settings
-        tumor_bam_path = tumor_bam_path_format % tag
+        tumor_bam_path = tumor_bam_path_format % f'n{int(norm_pct)}t{int(tumor_pct)}'
         sample_tsv_dir = sample_tsv_dir_format % tag
         out_image_dir = out_image_dir_format % tag
         os.makedirs(out_image_dir, exist_ok=True)

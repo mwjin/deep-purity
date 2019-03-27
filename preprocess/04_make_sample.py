@@ -4,7 +4,7 @@ From MTO file, randomly sample M variants and get top N LODt score variants.
 Then, store essential information of the variants as TSV file.
 
 * Prerequisite
-    1. Run var_filter.py
+    1. Run 03_extract_var_info.py
 """
 from lab.job import Job, qsub_sge
 from lab.utils import time_stamp, eprint
