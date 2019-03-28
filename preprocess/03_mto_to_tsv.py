@@ -107,8 +107,8 @@ def main():
         if is_test:
             print(cmd)
         else:
-            prev_job_name = '%s.%s.%s.%s' % (prev_job_prefix, cell_line, depth, tag)
-            one_job_name = '%s.%s.%s.%s' % (job_name_prefix, cell_line, depth, tag)
+            prev_job_name = f'{prev_job_prefix}.{cell_line}.{depth}.{tag}'
+            one_job_name = f'{job_name_prefix}.{cell_line}.{depth}.{tag}'
             one_job = Job(one_job_name, cmd, hold_jid=prev_job_name)
             jobs.append(one_job)
 
