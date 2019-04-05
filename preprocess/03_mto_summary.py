@@ -33,7 +33,7 @@ class _Variant:
         """
         Parse the MTO file and make and return '_Variant' objects
         """
-        regex_chr = re.compile('^(chr)?([0-9]{1,2}|X)$')
+        regex_chr = re.compile('^(chr)?([0-9]{1,2}|XY)$')
         variants = []
 
         with open(mto_path, 'r') as mto_file:
@@ -81,36 +81,39 @@ def main():
     log_dir = f'{PROJECT_DIR}/log/{job_name_prefix}/{time_stamp()}'
 
     # param settings
-    cell_line = 'HCC1187'
-    depth = '30x'
+    cells = ['HCC1143', 'HCC1187', 'HCC1954', 'HCC2218']
+    depths = ['10x', '20x', '30x', '40x', '50x']
 
-    # path settings
-    mto_dir = f'{PROJECT_DIR}/results/mutect-output/{cell_line}/{depth}'
-    mto_path_format = f'{mto_dir}/{cell_line}.%s.{depth}.mto'
-    mto_summary_dir = f'{PROJECT_DIR}/results/mto-summary/{cell_line}/{depth}'
-    mto_summary_path_format = f'{mto_summary_dir}/{cell_line}.%s.{depth}.tsv'
-    os.makedirs(mto_summary_dir, exist_ok=True)
-
-    jobs = []  # a list of the 'Job' class
     norm_contams = [2.5, 5, 7.5, 10, 20, 30, 40, 50, 60, 70, 80, 90, 95]  # unit: percent
 
-    for norm_contam in norm_contams:
-        tumor_purity = 100 - norm_contam
-        purity_tag = f'n{int(norm_contam)}t{int(tumor_purity)}'
+    jobs = []  # a list of the 'Job' class
 
-        # in-loop path settings
-        mto_path = mto_path_format % purity_tag
-        out_tsv_path = mto_summary_path_format % purity_tag
+    for cell_line in cells:
+        for depth in depths:
+            # path settings
+            mto_dir = f'{PROJECT_DIR}/results/mutect-output/{cell_line}/{depth}'
+            mto_path_format = f'{mto_dir}/{cell_line}.%s.{depth}.mto'
+            mto_summary_dir = f'{PROJECT_DIR}/results/mto-summary/{cell_line}/{depth}'
+            mto_summary_path_format = f'{mto_summary_dir}/{cell_line}.%s.{depth}.tsv'
+            os.makedirs(mto_summary_dir, exist_ok=True)
 
-        cmd = f'{script} make_variant_summary {out_tsv_path} {mto_path}'
+            for norm_contam in norm_contams:
+                tumor_purity = 100 - norm_contam
+                purity_tag = f'n{int(norm_contam)}t{int(tumor_purity)}'
 
-        if is_test:
-            print(cmd)
-        else:
-            prev_job_name = f'{prev_job_prefix}.{cell_line}.{depth}.{purity_tag}'
-            one_job_name = f'{job_name_prefix}.{cell_line}.{depth}.{purity_tag}'
-            one_job = Job(one_job_name, cmd, hold_jid=prev_job_name)
-            jobs.append(one_job)
+                # in-loop path settings
+                mto_path = mto_path_format % purity_tag
+                out_tsv_path = mto_summary_path_format % purity_tag
+
+                cmd = f'{script} make_variant_summary {out_tsv_path} {mto_path}'
+
+                if is_test:
+                    print(cmd)
+                else:
+                    prev_job_name = f'{prev_job_prefix}.{cell_line}.{depth}.{purity_tag}'
+                    one_job_name = f'{job_name_prefix}.{cell_line}.{depth}.{purity_tag}'
+                    one_job = Job(one_job_name, cmd, hold_jid=prev_job_name)
+                    jobs.append(one_job)
 
     if not is_test:
         qsub_sge(jobs, queue, log_dir)
