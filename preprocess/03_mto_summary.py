@@ -33,7 +33,7 @@ class _Variant:
         """
         Parse the MTO file and make and return '_Variant' objects
         """
-        regex_chr = re.compile('^[0-9]{1,2}|[XY]$')
+        regex_chr = re.compile('^(chr)?([0-9]{1,2}|X)$')
         variants = []
 
         with open(mto_path, 'r') as mto_file:
@@ -77,38 +77,38 @@ def main():
     is_test = True
 
     prev_job_prefix = 'Minu.Mutect'
-    job_name_prefix = 'Minu.Var.Filtering'
+    job_name_prefix = 'Minu.Mutect.Out.Summary'
     log_dir = f'{PROJECT_DIR}/log/{job_name_prefix}/{time_stamp()}'
 
     # param settings
-    cell_line = 'HCC1954'
+    cell_line = 'HCC1187'
     depth = '30x'
 
     # path settings
-    mto_dir = f'{PROJECT_DIR}/results/mixed-bam-var-call'
-    mto_path_format = f'{mto_dir}/{cell_line}.{depth}.%s.mto'
-    out_tsv_dir = f'{mto_dir}'
-    out_tsv_format = f'{out_tsv_dir}/{cell_line}.{depth}.%s.tsv'
-    os.makedirs(out_tsv_dir, exist_ok=True)
+    mto_dir = f'{PROJECT_DIR}/results/mutect-output/{cell_line}/{depth}'
+    mto_path_format = f'{mto_dir}/{cell_line}.%s.{depth}.mto'
+    mto_summary_dir = f'{PROJECT_DIR}/results/mto-summary/{cell_line}/{depth}'
+    mto_summary_path_format = f'{mto_summary_dir}/{cell_line}.%s.{depth}.tsv'
+    os.makedirs(mto_summary_dir, exist_ok=True)
 
     jobs = []  # a list of the 'Job' class
-    norm_contam_pcts = [2.5, 5, 7.5, 10, 20, 30, 40, 50, 60, 70, 80, 90, 95]
+    norm_contams = [2.5, 5, 7.5, 10, 20, 30, 40, 50, 60, 70, 80, 90, 95]  # unit: percent
 
-    for norm_pct in norm_contam_pcts:
-        tumor_pct = 100 - norm_pct
-        tag = f'n{norm_pct}t{tumor_pct}'
+    for norm_contam in norm_contams:
+        tumor_purity = 100 - norm_contam
+        purity_tag = f'n{int(norm_contam)}t{int(tumor_purity)}'
 
         # in-loop path settings
-        mto_path = mto_path_format % tag
-        out_tsv_path = out_tsv_format % tag
+        mto_path = mto_path_format % purity_tag
+        out_tsv_path = mto_summary_path_format % purity_tag
 
         cmd = f'{script} make_variant_summary {out_tsv_path} {mto_path}'
 
         if is_test:
             print(cmd)
         else:
-            prev_job_name = f'{prev_job_prefix}.{cell_line}.{depth}.{tag}'
-            one_job_name = f'{job_name_prefix}.{cell_line}.{depth}.{tag}'
+            prev_job_name = f'{prev_job_prefix}.{cell_line}.{depth}.{purity_tag}'
+            one_job_name = f'{job_name_prefix}.{cell_line}.{depth}.{purity_tag}'
             one_job = Job(one_job_name, cmd, hold_jid=prev_job_name)
             jobs.append(one_job)
 
