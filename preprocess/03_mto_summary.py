@@ -33,7 +33,7 @@ class _Variant:
         """
         Parse the MTO file and make and return '_Variant' objects
         """
-        regex_chr = re.compile('^(chr)?([0-9]{1,2}|XY)$')
+        regex_chr = re.compile('^(chr)?([0-9]{1,2}|[XY])$')
         variants = []
 
         with open(mto_path, 'r') as mto_file:
