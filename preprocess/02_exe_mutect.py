@@ -26,7 +26,7 @@ def main():
     is_test = True
     prev_job_prefix = 'Minu.In.Silico.Bam.Mix'
     job_name_prefix = 'Minu.Mutect'
-    log_dir = '%s/log/%s/%s' % (PROJECT_DIR, job_name_prefix, time_stamp())
+    log_dir = f'{PROJECT_DIR}/log/{job_name_prefix}/{time_stamp()}'
 
     # param settings
     cell_line = 'HCC1954'
@@ -34,13 +34,13 @@ def main():
 
     # path settings
     # input
-    in_bam_dir = '%s/results/mixed-bam' % PROJECT_DIR
-    in_bam_path_format = f'{in_bam_dir}/{cell_line}.{depth}.%s.bam'
-    norm_bam_path = f'/extdata6/Beomman/raw-data/tcga-benchmark4/{cell_line}.NORMAL.{depth}.compare.bam' # ctrl
+    in_bam_dir = f'/extdata4/baeklab/minwoo/data/TCGA-HCC-MIX/{cell_line}/{depth}'
+    in_bam_path_format = f'{in_bam_dir}/{cell_line}.%s.{depth}.bam'
+    norm_bam_path = f'/extdata6/Beomman/raw-data/tcga-benchmark4/{cell_line}.NORMAL.{depth}.compare.bam'  # ctrl
     # output
-    out_dir = f'{PROJECT_DIR}/results/mixed-bam-var-call/{cell_line}/{depth}'
-    out_vcf_path_format = f'{out_dir}/{cell_line}.{depth}.%s.vcf'
-    out_mto_path_format = f'{out_dir}/{cell_line}.{depth}.%s.mto'
+    out_dir = f'{PROJECT_DIR}/results/mutect-output/{cell_line}/{depth}'
+    out_vcf_path_format = f'{out_dir}/{cell_line}.%s.{depth}.vcf'
+    out_mto_path_format = f'{out_dir}/{cell_line}.%s.{depth}.mto'
     os.makedirs(out_dir, exist_ok=True)
 
     # constant paths for mutect
@@ -55,7 +55,7 @@ def main():
 
     for norm_pct in norm_contam_pcts:
         tumor_pct = 100 - norm_pct
-        tag = f'n{norm_pct}t{tumor_pct}'
+        tag = f'n{int(norm_pct)}t{int(tumor_pct)}'
 
         # in-loop path settings
         in_bam_path = in_bam_path_format % tag
