@@ -14,7 +14,7 @@ from lab.job import Job, qsub_sge
 
 # constants
 PROJECT_DIR = '/extdata4/baeklab/minwoo/projects/deep-purity'
-KDE_BANDWIDTH = 0.02  # kde parameter; the histogram is more smooth at low bandwidth.
+KDE_BANDWIDTH = 0.05  # kde parameter; the histogram is more smooth at low bandwidth.
 
 
 def main():
@@ -31,8 +31,8 @@ def main():
     log_dir = f'{PROJECT_DIR}/log/{job_name_prefix}/{time_stamp()}'
 
     # param settings
-    cells = ['HCC1143', 'HCC1187', 'HCC1954', 'HCC2218']
-    depths = ['10x', '20x', '30x', '40x', '50x']
+    cells = ['HCC1143', 'HCC1954']
+    depths = ['30x']
     norm_contams = [2.5, 5, 7.5, 10, 20, 30, 40, 50, 60, 70, 80, 90, 95]  # unit: percent
 
     # path settings
@@ -53,19 +53,20 @@ def main():
                 purity_tag = f'n{int(norm_contam)}t{int(tumor_purity)}'
 
                 # in-loop path settings
-                # path2: a path of a plot after finding local minima and maxima
+                # path2: a path of a plot after finding local extreama
                 var_tsv_path = f'{ks_test_out_dir}/{cell_line}.{purity_tag}.{depth}.tsv'
                 kde_result_path = f'{kde_out_dir}/kde_result_{cell_line}_{purity_tag}_{depth}.txt'
                 kde_plot_path = f'{kde_out_dir}/kde_curve_{cell_line}_{purity_tag}_{depth}.png'
                 kde_plot_path2 = f'{kde_out_dir}/kde_curve_2_{cell_line}_{purity_tag}_{depth}.png'
                 kde_plot_title = f'Gaussian_KDE_{cell_line}_{depth}_{purity_tag}'
+                local_extrema_txt_path = f'{kde_out_dir}/local_extreme_vaf_{purity_tag}_{depth}.txt'
 
                 if not os.path.isfile(var_tsv_path):
                     continue
 
                 cmd = f'{script} vaf_hist_kde {kde_plot_path} {kde_result_path} {var_tsv_path} {kde_plot_title};'
-                cmd += f'{script} kde_with_local_minima_maxima ' \
-                       f'{kde_plot_path2} {kde_result_path} {var_tsv_path} {kde_plot_title};'
+                cmd += f'{script} find_local_extrema {kde_plot_path2} {local_extrema_txt_path} ' \
+                       f'{kde_result_path} {var_tsv_path} {kde_plot_title};'
 
                 if is_test:
                     print(cmd)
@@ -157,13 +158,13 @@ def vaf_hist_kde(kde_plot_path, kde_result_path, var_tsv_path, kde_plot_title):
             kde_result_file.write(f'{x}\t{y}\n')
 
 
-def kde_with_local_minima_maxima(out_plot_path, kde_result_path, var_tsv_path, kde_plot_title):
+def find_local_extrema(out_plot_path, local_extrema_txt_path, kde_result_path, var_tsv_path, kde_plot_title):
     """
     The function finds local minima and local maxima from smoothed histogram.
-    By finding local minima, we can divide homozygous variants and heterozygous variants.
+    The results are going to be saved as a txt file and represented on a newly drawn plot.
+    By finding local extrema, we can divide homozygous variants and heterozygous variants.
     """
     eprint(f'[LOG] Find local minima and maxima of KDE curve')
-    # param settings
     kde_bandwidth = KDE_BANDWIDTH
     list_x = []
     list_kde = []
@@ -177,7 +178,7 @@ def kde_with_local_minima_maxima(out_plot_path, kde_result_path, var_tsv_path, k
     local_maxima = argrelextrema(numpy.array(list_kde), numpy.greater)  # find local maximum
     local_minima = argrelextrema(numpy.array(list_kde), numpy.less)  # find local minimum
 
-    eprint('[LOG] Construct a VAF histrogram')
+    eprint('[LOG] Construct a VAF histrogram for plotting')
     vaf_list = []
 
     with open(var_tsv_path, 'r') as var_tsv_file:
@@ -209,7 +210,7 @@ def kde_with_local_minima_maxima(out_plot_path, kde_result_path, var_tsv_path, k
             else:
                 sys.exit(f'[ERROR] Invalid VAF: {vaf}')
 
-    eprint(f'[LOG] Draw the KDE curve and the histogram curve')
+    eprint(f'[LOG] Save local extrema as a text and represent them on the plot')
     fig, ax1 = plt.subplots()
     ax1.set_xlabel('VAF')
     ax1.set_ylabel('Density')
@@ -217,10 +218,17 @@ def kde_with_local_minima_maxima(out_plot_path, kde_result_path, var_tsv_path, k
     color = 'black'
     ax1.plot(list_x, list_kde, color=color, label='bandwidth: %s' % kde_bandwidth)
 
-    for idx_lmax in local_maxima[0]:
-        ax1.axvline(list_x[idx_lmax], color='red', linestyle='--')
-    for idx_lmin in local_minima[0]:
-        ax1.axvline(list_x[idx_lmin], color='blue', linestyle='--')
+    vaf_to_label = {}  # key: a VAF, value: lmax (local maximum) or lmin (local minimum)
+
+    for lmax_idx in local_maxima[0]:
+        lmax_vaf = list_x[lmax_idx]
+        vaf_to_label[lmax_vaf] = 'lmax'
+        ax1.axvline(lmax_vaf, color='red', linestyle='--')
+    for lmin_idx in local_minima[0]:
+        lmin_vaf = list_x[lmin_idx]
+        vaf_to_label[lmin_vaf] = 'lmin'
+        ax1.axvline(list_x[lmin_idx], color='blue', linestyle='--')
+
     ax1.legend(loc='upper left')
 
     ax2 = ax1.twinx()
@@ -236,6 +244,10 @@ def kde_with_local_minima_maxima(out_plot_path, kde_result_path, var_tsv_path, k
     fig.tight_layout()
     plt.savefig(out_plot_path)
     plt.close()
+
+    with open(local_extrema_txt_path, 'w') as local_extrema_txt_file:
+        for vaf in sorted(vaf_to_label.keys()):
+            print(vaf, vaf_to_label[vaf], sep='\t', file=local_extrema_txt_file)
 
 
 def vaf_hist_kde_old(out_dir, ks_result_dir, diptest_result_path, silverman_result_path):
