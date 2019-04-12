@@ -123,19 +123,19 @@ def vaf_hist_kde(kde_plot_path, kde_result_path, var_tsv_path, kde_plot_title):
                 sys.exit(f'[ERROR] Invalid VAF: {vaf}')
 
     eprint(f'[LOG] Draw KDE curve and histogram curve')
+    kde_bandwidth = KDE_BANDWIDTH
     fig, ax1 = plt.subplots()  # two independent plot(kde smooth hist and origin hist) are drawn at single figure.
 
     ax1.set_xlabel('VAF')
     ax1.set_ylabel('Density')  # kde density
     plt.title(kde_plot_title)
 
-    kde_bandwidth = KDE_BANDWIDTH
     color = 'red'
     kde = KernelDensity(kernel='gaussian', bandwidth=kde_bandwidth).fit(vaf_list[:, numpy.newaxis])
     x_plot = numpy.linspace(0, 1, len(vaf_list))[:, numpy.newaxis]
     log_dens = kde.score_samples(x_plot)
 
-    ax1.plot(x_plot[:, 0], numpy.exp(log_dens), color=color, label='bandwidth: %s' % kde_bandwidth)
+    ax1.plot(x_plot[:, 0], numpy.exp(log_dens), color=color, label=f'bandwidth: {kde_bandwidth:.2f}')
     ax1.legend(loc='upper right')
 
     ax2 = ax1.twinx()
@@ -165,7 +165,6 @@ def find_local_extrema(out_plot_path, local_extrema_txt_path, kde_result_path, v
     By finding local extrema, we can divide homozygous variants and heterozygous variants.
     """
     eprint(f'[LOG] Find local minima and maxima of KDE curve')
-    kde_bandwidth = KDE_BANDWIDTH
     list_x = []
     list_kde = []
 
@@ -175,8 +174,11 @@ def find_local_extrema(out_plot_path, local_extrema_txt_path, kde_result_path, v
             list_x.append(float(cols[0]))
             list_kde.append(float(cols[1]))
 
-    local_maxima = argrelextrema(numpy.array(list_kde), numpy.greater)  # find local maximum
-    local_minima = argrelextrema(numpy.array(list_kde), numpy.less)  # find local minimum
+    list_kde = numpy.array(list_kde)
+    list_kde = list_kde / list_kde.max()  # normalization
+
+    local_maxima_indices = argrelextrema(list_kde, numpy.greater)  # find local maximum
+    local_minima_indices = argrelextrema(list_kde, numpy.less)  # find local minimum
 
     eprint('[LOG] Construct a VAF histrogram for plotting')
     vaf_list = []
@@ -211,20 +213,21 @@ def find_local_extrema(out_plot_path, local_extrema_txt_path, kde_result_path, v
                 sys.exit(f'[ERROR] Invalid VAF: {vaf}')
 
     eprint(f'[LOG] Save local extrema as a text and represent them on the plot')
+    kde_bandwidth = KDE_BANDWIDTH
     fig, ax1 = plt.subplots()
     ax1.set_xlabel('VAF')
     ax1.set_ylabel('Density')
     plt.title(kde_plot_title)
     color = 'black'
-    ax1.plot(list_x, list_kde, color=color, label='bandwidth: %s' % kde_bandwidth)
+    ax1.plot(list_x, list_kde, color=color, label=f'bandwidth: {kde_bandwidth:.2f}')
 
     vaf_to_label = {}  # key: a VAF, value: lmax (local maximum) or lmin (local minimum)
 
-    for lmax_idx in local_maxima[0]:
+    for lmax_idx in local_maxima_indices[0]:
         lmax_vaf = list_x[lmax_idx]
         vaf_to_label[lmax_vaf] = 'lmax'
         ax1.axvline(lmax_vaf, color='red', linestyle='--')
-    for lmin_idx in local_minima[0]:
+    for lmin_idx in local_minima_indices[0]:
         lmin_vaf = list_x[lmin_idx]
         vaf_to_label[lmin_vaf] = 'lmin'
         ax1.axvline(list_x[lmin_idx], color='blue', linestyle='--')
@@ -248,6 +251,17 @@ def find_local_extrema(out_plot_path, local_extrema_txt_path, kde_result_path, v
     with open(local_extrema_txt_path, 'w') as local_extrema_txt_file:
         for vaf in sorted(vaf_to_label.keys()):
             print(vaf, vaf_to_label[vaf], sep='\t', file=local_extrema_txt_file)
+
+
+def get_kde_bandwidth(values):
+    """
+    Calculate an appropriate bandwidth using a rule-of-thumb bandwidth estimator (Silverman, 1986)
+    """
+    val_cnt = len(values)
+    val_std = float(numpy.std(values))
+    bandwidth = ((4 * val_std ** 5) / (3 * val_cnt)) ** (1 / 5)
+
+    return bandwidth
 
 
 def vaf_hist_kde_old(out_dir, ks_result_dir, diptest_result_path, silverman_result_path):
