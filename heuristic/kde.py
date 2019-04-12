@@ -37,7 +37,7 @@ def main():
 
     # path settings
     ks_test_result_dir = f'{PROJECT_DIR}/results/heuristic/ks-test'
-    kde_result_dir = f'{PROJECT_DIR}/results/heuristic/kde/{KDE_BANDWIDTH}'
+    kde_result_dir = f'{PROJECT_DIR}/results/heuristic/kde-normal/{KDE_BANDWIDTH}'
 
     jobs = []  # a list of the 'Job' class
 
@@ -177,8 +177,11 @@ def find_local_extrema(out_plot_path, local_extrema_txt_path, kde_result_path, v
     list_kde = numpy.array(list_kde)
     list_kde = list_kde / list_kde.max()  # normalization
 
-    local_maxima_indices = argrelextrema(list_kde, numpy.greater)  # find local maximum
-    local_minima_indices = argrelextrema(list_kde, numpy.less)  # find local minimum
+    local_maxima_indices = argrelextrema(list_kde, numpy.greater)[0]  # find local maximum
+    local_minima_indices = argrelextrema(list_kde, numpy.less)[0]  # find local minimum
+
+    local_maxima_indices = local_extrema_filter(local_maxima_indices, list_x, list_kde)
+    local_minima_indices = local_extrema_filter(local_minima_indices, list_x, list_kde)
 
     eprint('[LOG] Construct a VAF histrogram for plotting')
     vaf_list = []
@@ -223,11 +226,12 @@ def find_local_extrema(out_plot_path, local_extrema_txt_path, kde_result_path, v
 
     vaf_to_label = {}  # key: a VAF, value: lmax (local maximum) or lmin (local minimum)
 
-    for lmax_idx in local_maxima_indices[0]:
+    for lmax_idx in local_maxima_indices:
         lmax_vaf = list_x[lmax_idx]
         vaf_to_label[lmax_vaf] = 'lmax'
         ax1.axvline(lmax_vaf, color='red', linestyle='--')
-    for lmin_idx in local_minima_indices[0]:
+
+    for lmin_idx in local_minima_indices:
         lmin_vaf = list_x[lmin_idx]
         vaf_to_label[lmin_vaf] = 'lmin'
         ax1.axvline(list_x[lmin_idx], color='blue', linestyle='--')
@@ -251,6 +255,34 @@ def find_local_extrema(out_plot_path, local_extrema_txt_path, kde_result_path, v
     with open(local_extrema_txt_path, 'w') as local_extrema_txt_file:
         for vaf in sorted(vaf_to_label.keys()):
             print(vaf, vaf_to_label[vaf], sep='\t', file=local_extrema_txt_file)
+
+
+def local_extrema_filter(local_extrema_indices, xs, ys):
+    """
+    Get only major peaks from the local extrema
+    """
+    filtered_lextrema_indices = []
+    slope_cutoff = 0.1
+
+    for lextrema_idx in local_extrema_indices:
+        lextrema = ys[lextrema_idx]
+        lextrema_arg = xs[lextrema_idx]
+
+        left_val = ys[lextrema_idx - 100]
+        left_arg = xs[lextrema_idx - 100]
+
+        right_val = ys[lextrema_idx + 100]
+        right_arg = xs[lextrema_idx + 100]
+
+        left_slope = (lextrema - left_val) / (lextrema_arg - left_arg)
+        right_slope = (lextrema - right_val) / (lextrema_arg - right_arg)
+
+        print(left_slope, right_slope)
+
+        if abs(left_slope) >= slope_cutoff and abs(right_slope) >= slope_cutoff:
+            filtered_lextrema_indices.append(lextrema_idx)
+
+    return numpy.array(filtered_lextrema_indices)
 
 
 def get_kde_bandwidth(values):
