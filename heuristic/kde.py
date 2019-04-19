@@ -37,7 +37,7 @@ def main():
 
     # path settings
     ks_test_result_dir = f'{PROJECT_DIR}/results/heuristic/ks-test'
-    kde_result_dir = f'{PROJECT_DIR}/results/heuristic/kde-normal/{KDE_BANDWIDTH}'
+    kde_result_dir = f'{PROJECT_DIR}/results/heuristic/kde-normal-filt/{KDE_BANDWIDTH}'
 
     jobs = []  # a list of the 'Job' class
 
@@ -124,6 +124,7 @@ def vaf_hist_kde(kde_plot_path, kde_result_path, var_tsv_path, kde_plot_title):
 
     eprint(f'[LOG] Draw KDE curve and histogram curve')
     kde_bandwidth = KDE_BANDWIDTH
+    # kde_bandwidth = get_kde_bandwidth(vaf_list)
     fig, ax1 = plt.subplots()  # two independent plot(kde smooth hist and origin hist) are drawn at single figure.
 
     ax1.set_xlabel('VAF')
@@ -180,8 +181,8 @@ def find_local_extrema(out_plot_path, local_extrema_txt_path, kde_result_path, v
     local_maxima_indices = argrelextrema(list_kde, numpy.greater)[0]  # find local maximum
     local_minima_indices = argrelextrema(list_kde, numpy.less)[0]  # find local minimum
 
-    local_maxima_indices = local_extrema_filter(local_maxima_indices, list_x, list_kde)
-    local_minima_indices = local_extrema_filter(local_minima_indices, list_x, list_kde)
+    local_maxima_indices = local_extrema_filter(local_maxima_indices, list_x, list_kde, numpy.greater)
+    local_minima_indices = local_extrema_filter(local_minima_indices, list_x, list_kde, numpy.less)
 
     eprint('[LOG] Construct a VAF histrogram for plotting')
     vaf_list = []
@@ -217,6 +218,7 @@ def find_local_extrema(out_plot_path, local_extrema_txt_path, kde_result_path, v
 
     eprint(f'[LOG] Save local extrema as a text and represent them on the plot')
     kde_bandwidth = KDE_BANDWIDTH
+    # kde_bandwidth = get_kde_bandwidth(vaf_list)
     fig, ax1 = plt.subplots()
     ax1.set_xlabel('VAF')
     ax1.set_ylabel('Density')
@@ -257,30 +259,77 @@ def find_local_extrema(out_plot_path, local_extrema_txt_path, kde_result_path, v
             print(vaf, vaf_to_label[vaf], sep='\t', file=local_extrema_txt_file)
 
 
-def local_extrema_filter(local_extrema_indices, xs, ys):
+def local_extrema_filter(lextrema_indices, xs, ys, comparator):
     """
     Get only major peaks from the local extrema
+    This function see trends of left and right values of each peak.
+    It checks whether absolute values of differences
+    between the local extreme value and a left or right value globally increases or not.
     """
+    # params
+    x_cnt = len(xs)
+    max_x_interval = 0.1
+    x_interval = xs[1] - xs[0]
+
+    num_check = 20
+    max_idx_interval = int(max_x_interval // x_interval)
+    idx_interval = max_idx_interval // num_check
+
+    while idx_interval == 0:
+        num_check //= 2
+        idx_interval = max_idx_interval // num_check
+
+    penalty_cutoff = num_check // 2
+    print(x_interval, max_idx_interval, idx_interval, num_check)
+
     filtered_lextrema_indices = []
-    slope_cutoff = 0.1
 
-    for lextrema_idx in local_extrema_indices:
+    for lextrema_idx in lextrema_indices:
+        print(lextrema_idx, xs[lextrema_idx])
         lextrema = ys[lextrema_idx]
-        lextrema_arg = xs[lextrema_idx]
 
-        left_val = ys[lextrema_idx - 100]
-        left_arg = xs[lextrema_idx - 100]
+        left_diffs = []
+        right_diffs = []
 
-        right_val = ys[lextrema_idx + 100]
-        right_arg = xs[lextrema_idx + 100]
+        # update slopes
+        for i in range(num_check):
+            left_idx = lextrema_idx - idx_interval * (i + 1)
 
-        left_slope = (lextrema - left_val) / (lextrema_arg - left_arg)
-        right_slope = (lextrema - right_val) / (lextrema_arg - right_arg)
+            if left_idx < 0:
+                left_idx = 0
 
-        print(left_slope, right_slope)
+            left_val = ys[left_idx]
+            left_diff = lextrema - left_val
+            left_diffs.append(left_diff)
 
-        if abs(left_slope) >= slope_cutoff and abs(right_slope) >= slope_cutoff:
-            filtered_lextrema_indices.append(lextrema_idx)
+            right_idx = lextrema_idx + idx_interval * (i + 1)
+
+            if right_idx >= x_cnt:
+                right_idx = x_cnt - 1
+
+            right_val = ys[right_idx]
+            right_diff = lextrema - right_val
+            right_diffs.append(right_diff)
+
+        print(left_diffs, right_diffs)
+
+        # check whether the slopes globally increase or not
+        left_penalty = 0  # +1 if trend is reverse
+        right_penalty = 0
+
+        for i in range(1, num_check):
+            if comparator(left_diffs[i - 1], left_diffs[i]):
+                left_penalty += 1
+
+            if comparator(right_diffs[i - 1], right_diffs[i]):
+                right_penalty += 1
+
+        if left_penalty < penalty_cutoff and right_penalty < penalty_cutoff:
+            if (left_diffs[-1] * right_diffs[-1] > 0) and \
+                    (abs(left_diffs[-1]) > 0.02 or abs(right_diffs[-1]) > 0.02):
+                filtered_lextrema_indices.append(lextrema_idx)
+
+        print(left_penalty, right_penalty)
 
     return numpy.array(filtered_lextrema_indices)
 
@@ -300,12 +349,12 @@ def vaf_hist_kde_old(out_dir, ks_result_dir, diptest_result_path, silverman_resu
     """
     Deprecated function
     """
-    '''
+    """
     we uses both of dip test and silverman test for bimodality test.
     silverman test is used for p value and dip test for VAF threshold.
     if silverman test's p value < 0.01, we decide the variants have bimodal distribution.
 
-    '''
+    """
     cell_line = ''
     depth = ''
     purity_tags = []
