@@ -33,7 +33,7 @@ def main():
     cells = ['HCC1143', 'HCC1954']
     depths = ['30x']
     norm_contams = [2.5, 5, 7.5, 10, 20, 30, 40, 50, 60, 70, 80, 90, 95]  # unit: percent
-    kde_bandwidth = 1.8
+    kde_bandwidth = 0.02
 
     # path settings
     ks_test_result_dir = f'{PROJECT_DIR}/results/heuristic/ks-test'
@@ -56,7 +56,7 @@ def main():
                 # path2: a path of a plot after finding local extreama
                 var_tsv_path = f'{ks_test_out_dir}/{cell_line}.{purity_tag}.{depth}.tsv'
                 kde_result_path = f'{kde_out_dir}/kde_result_{cell_line}_{purity_tag}_{depth}.txt'
-                kde_plot_path = f'{kde_out_dir}/kde_curve_2_{cell_line}_{purity_tag}_{depth}.png'
+                kde_plot_path = f'{kde_out_dir}/plot_{cell_line}_{purity_tag}_{depth}.png'
                 kde_plot_title = f'Gaussian_KDE_{cell_line}_{depth}_{purity_tag}'
                 local_extrema_txt_path = f'{kde_out_dir}/local_extreme_vaf_{purity_tag}_{depth}.txt'
 
@@ -65,7 +65,7 @@ def main():
 
                 cmd = f'{script} vaf_hist_kde {kde_result_path} {var_tsv_path} {kde_bandwidth};'
                 cmd += f'{script} find_local_extrema {local_extrema_txt_path} {kde_result_path};'
-                cmd += f'{script} draw_plot {kde_plot_path} {kde_result_path} {var_tsv_path} ' \
+                cmd += f'{script} draw_plot {kde_plot_path} {var_tsv_path} {kde_result_path} ' \
                        f'{local_extrema_txt_path} {kde_plot_title} {kde_bandwidth};'
 
                 if is_test:
@@ -163,6 +163,7 @@ def find_local_extrema(local_extrema_txt_path, kde_result_path):
 
 def draw_plot(out_plot_path, var_tsv_path, kde_result_path, local_extrema_path, kde_plot_title, kde_bandwidth):
     eprint('[LOG] Construct a VAF histrogram for plotting')
+    kde_bandwidth = eval(kde_bandwidth)
     vaf_list = []
 
     with open(var_tsv_path, 'r') as var_tsv_file:
@@ -223,9 +224,9 @@ def draw_plot(out_plot_path, var_tsv_path, kde_result_path, local_extrema_path, 
     # plot the VAF histogram
     ax2 = ax1.twinx()
     ax2.set_ylabel('Frequency')
-    var_cnt = 0
-    ax2.plot([round(x, 2) for x in sorted(vaf_hist.keys(), key=lambda x:x[0])],
-             [vaf_hist[x] / var_cnt for x in sorted(vaf_hist.keys(), key=lambda x:x[0])],
+    var_cnt = len(vaf_list)
+    ax2.plot([round(x, 2) for x in sorted(vaf_hist.keys())],
+             [vaf_hist[x] / var_cnt for x in sorted(vaf_hist.keys())],
              'g--', label=f'histogram (N: {var_cnt})')
 
     ax2.tick_params(axis='y')
