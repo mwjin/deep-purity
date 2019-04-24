@@ -14,7 +14,6 @@ from lab.job import Job, qsub_sge
 
 # constants
 PROJECT_DIR = '/extdata4/baeklab/minwoo/projects/deep-purity'
-KDE_BANDWIDTH = 0.05  # kde parameter; the histogram is more smooth at low bandwidth.
 
 
 def main():
@@ -34,10 +33,11 @@ def main():
     cells = ['HCC1143', 'HCC1954']
     depths = ['30x']
     norm_contams = [2.5, 5, 7.5, 10, 20, 30, 40, 50, 60, 70, 80, 90, 95]  # unit: percent
+    kde_bandwidth = 1.8
 
     # path settings
     ks_test_result_dir = f'{PROJECT_DIR}/results/heuristic/ks-test'
-    kde_result_dir = f'{PROJECT_DIR}/results/heuristic/kde-normal-filt/{KDE_BANDWIDTH}'
+    kde_result_dir = f'{PROJECT_DIR}/results/heuristic/kde-normal-filt/{kde_bandwidth}'
 
     jobs = []  # a list of the 'Job' class
 
@@ -64,9 +64,10 @@ def main():
                 if not os.path.isfile(var_tsv_path):
                     continue
 
-                cmd = f'{script} vaf_hist_kde {kde_plot_path} {kde_result_path} {var_tsv_path} {kde_plot_title};'
+                cmd = f'{script} vaf_hist_kde {kde_plot_path} {kde_result_path} ' \
+                      f'{var_tsv_path} {kde_plot_title} {kde_bandwidth};'
                 cmd += f'{script} find_local_extrema {kde_plot_path2} {local_extrema_txt_path} ' \
-                       f'{kde_result_path} {var_tsv_path} {kde_plot_title};'
+                       f'{kde_result_path} {var_tsv_path} {kde_plot_title} {kde_bandwidth};'
 
                 if is_test:
                     print(cmd)
@@ -80,7 +81,7 @@ def main():
         qsub_sge(jobs, queue, log_dir)
 
 
-def vaf_hist_kde(kde_plot_path, kde_result_path, var_tsv_path, kde_plot_title):
+def vaf_hist_kde(kde_plot_path, kde_result_path, var_tsv_path, kde_plot_title, kde_bandwidth):
     """
     The function uses kernel density estimation for VAF histogram.
     The kernel density estimation smooths the shape of VAF histogram.
@@ -89,8 +90,10 @@ def vaf_hist_kde(kde_plot_path, kde_result_path, var_tsv_path, kde_plot_title):
     :param kde_result_path: a path of a KDE result
     :param var_tsv_path: a path of a TSV file for variants
     :param kde_plot_title: a title of the KDE plot
+    :param kde_bandwidth: a bandwidth for KDE
     """
     eprint('[LOG] Construct a VAF histrogram')
+    kde_bandwidth = eval(kde_bandwidth)
     vaf_list = []
 
     with open(var_tsv_path, 'r') as var_tsv_file:
@@ -123,8 +126,6 @@ def vaf_hist_kde(kde_plot_path, kde_result_path, var_tsv_path, kde_plot_title):
                 sys.exit(f'[ERROR] Invalid VAF: {vaf}')
 
     eprint(f'[LOG] Draw KDE curve and histogram curve')
-    kde_bandwidth = KDE_BANDWIDTH
-    # kde_bandwidth = get_kde_bandwidth(vaf_list)
     fig, ax1 = plt.subplots()  # two independent plot(kde smooth hist and origin hist) are drawn at single figure.
 
     ax1.set_xlabel('VAF')
@@ -159,13 +160,15 @@ def vaf_hist_kde(kde_plot_path, kde_result_path, var_tsv_path, kde_plot_title):
             kde_result_file.write(f'{x}\t{y}\n')
 
 
-def find_local_extrema(out_plot_path, local_extrema_txt_path, kde_result_path, var_tsv_path, kde_plot_title):
+def find_local_extrema(out_plot_path, local_extrema_txt_path, kde_result_path,
+                       var_tsv_path, kde_plot_title, kde_bandwidth):
     """
     The function finds local minima and local maxima from smoothed histogram.
     The results are going to be saved as a txt file and represented on a newly drawn plot.
     By finding local extrema, we can divide homozygous variants and heterozygous variants.
     """
     eprint(f'[LOG] Find local minima and maxima of KDE curve')
+    kde_bandwidth = eval(kde_bandwidth)
     list_x = []
     list_kde = []
 
@@ -217,8 +220,6 @@ def find_local_extrema(out_plot_path, local_extrema_txt_path, kde_result_path, v
                 sys.exit(f'[ERROR] Invalid VAF: {vaf}')
 
     eprint(f'[LOG] Save local extrema as a text and represent them on the plot')
-    kde_bandwidth = KDE_BANDWIDTH
-    # kde_bandwidth = get_kde_bandwidth(vaf_list)
     fig, ax1 = plt.subplots()
     ax1.set_xlabel('VAF')
     ax1.set_ylabel('Density')
@@ -326,7 +327,7 @@ def local_extrema_filter(lextrema_indices, xs, ys, comparator):
 
         if left_penalty < penalty_cutoff and right_penalty < penalty_cutoff:
             if (left_diffs[-1] * right_diffs[-1] > 0) and \
-                    (abs(left_diffs[-1]) > 0.02 or abs(right_diffs[-1]) > 0.02):
+                    (abs(left_diffs[-1]) > 0.01 or abs(right_diffs[-1]) > 0.01):
                 filtered_lextrema_indices.append(lextrema_idx)
 
         print(left_penalty, right_penalty)
