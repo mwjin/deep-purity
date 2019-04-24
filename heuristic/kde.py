@@ -23,7 +23,7 @@ def main():
     # job scheduler settings
     script = os.path.abspath(__file__)
     queue = '24_730.q'
-    is_test = True
+    is_test = False
 
     prev_job_prefix = 'Minu.VAF.KS-Test.and.Filtering'
     job_name_prefix = 'Minu.VAF.Hist.KDE'
@@ -33,7 +33,7 @@ def main():
     cells = ['HCC1143', 'HCC1954']
     depths = ['30x']
     norm_contams = [2.5, 5, 7.5, 10, 20, 30, 40, 50, 60, 70, 80, 90, 95]  # unit: percent
-    kde_bandwidth = 0.02
+    kde_bandwidth = 0.03
 
     # path settings
     ks_test_result_dir = f'{PROJECT_DIR}/results/heuristic/ks-test'
@@ -123,7 +123,6 @@ def vaf_hist_kde(kde_result_path, var_tsv_path, kde_bandwidth):
 def find_local_extrema(local_extrema_txt_path, kde_result_path):
     """
     The function finds local minima and local maxima from smoothed histogram.
-    The results are going to be saved as a txt file and represented on a newly drawn plot.
     By finding local extrema, we can divide homozygous variants and heterozygous variants.
     """
     eprint(f'[LOG] Find local minima and maxima of KDE curve')
@@ -142,8 +141,8 @@ def find_local_extrema(local_extrema_txt_path, kde_result_path):
     local_maxima_indices = argrelextrema(list_kde, numpy.greater)[0]  # find local maximum
     local_minima_indices = argrelextrema(list_kde, numpy.less)[0]  # find local minimum
 
-    local_maxima_indices = local_extrema_filter(local_maxima_indices, list_x, list_kde, numpy.greater)
-    local_minima_indices = local_extrema_filter(local_minima_indices, list_x, list_kde, numpy.less)
+    local_maxima_indices = _local_extrema_filter(local_maxima_indices, list_x, list_kde, numpy.greater)
+    local_minima_indices = _local_extrema_filter(local_minima_indices, list_x, list_kde, numpy.less)
 
     eprint(f'[LOG] Save local minima and maxima')
     vaf_to_label = {}  # key: a VAF, value: lmax (local maximum) or lmin (local minimum)
@@ -162,10 +161,11 @@ def find_local_extrema(local_extrema_txt_path, kde_result_path):
 
 
 def draw_plot(out_plot_path, var_tsv_path, kde_result_path, local_extrema_path, kde_plot_title, kde_bandwidth):
-    eprint('[LOG] Construct a VAF histrogram for plotting')
+
     kde_bandwidth = eval(kde_bandwidth)
     vaf_list = []
 
+    eprint('[LOG] Construct a VAF histrogram for plotting')
     with open(var_tsv_path, 'r') as var_tsv_file:
         var_tsv_file.readline()  # remove a header
 
@@ -192,6 +192,9 @@ def draw_plot(out_plot_path, var_tsv_path, kde_result_path, local_extrema_path, 
             cols = line.strip('\n').split('\t')
             list_x.append(float(cols[0]))
             list_kde.append(float(cols[1]))
+
+    list_kde = numpy.array(list_kde)
+    list_kde = list_kde / list_kde.max()  # normalization
 
     eprint(f'[LOG] Read local extrema')
     vaf_to_label = {}  # key: a VAF, value: lmax (local maximum) or lmin (local minimum)
@@ -237,7 +240,7 @@ def draw_plot(out_plot_path, var_tsv_path, kde_result_path, local_extrema_path, 
     plt.close()
 
 
-def local_extrema_filter(lextrema_indices, xs, ys, comparator):
+def _local_extrema_filter(lextrema_indices, xs, ys, comparator):
     """
     Get only major peaks from the local extrema
     This function see trends of left and right values of each peak.
@@ -253,6 +256,7 @@ def local_extrema_filter(lextrema_indices, xs, ys, comparator):
     max_idx_interval = int(max_x_interval // x_interval)
     idx_interval = max_idx_interval // num_check
 
+    # if interval is too small, reduce # of checks
     while idx_interval == 0:
         num_check //= 2
         idx_interval = max_idx_interval // num_check
@@ -268,6 +272,9 @@ def local_extrema_filter(lextrema_indices, xs, ys, comparator):
 
         left_diffs = []
         right_diffs = []
+
+        left_idx = lextrema_idx
+        right_idx = lextrema_idx
 
         # update slopes
         for i in range(num_check):
@@ -302,9 +309,12 @@ def local_extrema_filter(lextrema_indices, xs, ys, comparator):
             if comparator(right_diffs[i - 1], right_diffs[i]):
                 right_penalty += 1
 
+        left_slope = left_diffs[-1] / (xs[lextrema_idx] - xs[left_idx])
+        right_slope = right_diffs[-1] / (xs[lextrema_idx] - xs[right_idx])
+        print(left_slope, right_slope)
+
         if left_penalty < penalty_cutoff and right_penalty < penalty_cutoff:
-            if (left_diffs[-1] * right_diffs[-1] > 0) and \
-                    (abs(left_diffs[-1]) > 0.01 or abs(right_diffs[-1]) > 0.01):
+            if (left_slope * right_slope < 0) and (abs(left_slope) > 0.5 and abs(right_slope) > 0.5):
                 filtered_lextrema_indices.append(lextrema_idx)
 
         print(left_penalty, right_penalty)
