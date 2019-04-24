@@ -64,8 +64,7 @@ def main():
                 if not os.path.isfile(var_tsv_path):
                     continue
 
-                cmd = f'{script} vaf_hist_kde {kde_plot_path} {kde_result_path} ' \
-                      f'{var_tsv_path} {kde_plot_title} {kde_bandwidth};'
+                cmd = f'{script} vaf_hist_kde {kde_result_path} {var_tsv_path} {kde_bandwidth};'
                 cmd += f'{script} find_local_extrema {kde_plot_path2} {local_extrema_txt_path} ' \
                        f'{kde_result_path} {var_tsv_path} {kde_plot_title} {kde_bandwidth};'
 
@@ -81,15 +80,13 @@ def main():
         qsub_sge(jobs, queue, log_dir)
 
 
-def vaf_hist_kde(kde_plot_path, kde_result_path, var_tsv_path, kde_plot_title, kde_bandwidth):
+def vaf_hist_kde(kde_result_path, var_tsv_path, kde_bandwidth):
     """
     The function uses kernel density estimation for VAF histogram.
     The kernel density estimation smooths the shape of VAF histogram.
 
-    :param kde_plot_path: a path of a KDE curve
     :param kde_result_path: a path of a KDE result
     :param var_tsv_path: a path of a TSV file for variants
-    :param kde_plot_title: a title of the KDE plot
     :param kde_bandwidth: a bandwidth for KDE
     """
     eprint('[LOG] Construct a VAF histrogram')
@@ -105,58 +102,21 @@ def vaf_hist_kde(kde_plot_path, kde_result_path, var_tsv_path, kde_plot_title, k
 
     vaf_list = numpy.array(vaf_list)
     vaf_hist = {}  # key: VAF bins, value: count; dictionary for histogram
-    bins = [round(0.01 * x, 2) for x in range(101)]
 
-    for idx in range(len(bins) - 1):
-        vaf_hist[(bins[idx], bins[idx + 1])] = 0  # initialize by 0
+    # initialization
+    for i in range(101):
+        vaf_hist[round(0.01 * i, 2)] = 0
 
     for vaf in vaf_list:
-        check = False  # check if data is counted
+        vaf_hist[round(vaf, 2)] += 1
 
-        for key in sorted(vaf_hist.keys(), key=lambda x: x[0]):
-            if key[0] <= vaf < key[1]:  # binning for histogram
-                vaf_hist[key] += 1
-                check = True
-                break
-
-        if not check:  # if data is not counted, the data is 1.
-            if vaf == 1.00:
-                vaf_hist[(0.99, 1.00)] += 1
-            else:
-                sys.exit(f'[ERROR] Invalid VAF: {vaf}')
-
-    eprint(f'[LOG] Draw KDE curve and histogram curve')
-    fig, ax1 = plt.subplots()  # two independent plot(kde smooth hist and origin hist) are drawn at single figure.
-
-    ax1.set_xlabel('VAF')
-    ax1.set_ylabel('Density')  # kde density
-    plt.title(kde_plot_title)
-
-    color = 'red'
+    eprint('[LOG] Gaussian kernel density estimation')
     kde = KernelDensity(kernel='gaussian', bandwidth=kde_bandwidth).fit(vaf_list[:, numpy.newaxis])
-    x_plot = numpy.linspace(0, 1, len(vaf_list))[:, numpy.newaxis]
-    log_dens = kde.score_samples(x_plot)
+    xs = numpy.linspace(0, 1, len(vaf_list))[:, numpy.newaxis]
+    log_kde_dens = kde.score_samples(xs)
 
-    ax1.plot(x_plot[:, 0], numpy.exp(log_dens), color=color, label=f'bandwidth: {kde_bandwidth:.2f}')
-    ax1.legend(loc='upper right')
-
-    ax2 = ax1.twinx()
-    ax2.set_ylabel('Frequency')
-    total_count_high_lodt = sum(vaf_hist.values())
-    ax2.plot([round((x[0] + x[1]) / 2, 2) for x in sorted(vaf_hist.keys(), key=lambda x:x[0])],
-             [vaf_hist[x] / total_count_high_lodt for x in sorted(vaf_hist.keys(), key=lambda x:x[0])],
-             'g--', label='histogram (N: %s)' % total_count_high_lodt)
-
-    ax2.tick_params(axis='y')
-    ax2.legend(loc='center right')
-
-    fig.tight_layout()
-    plt.savefig(kde_plot_path)
-    plt.close()
-
-    eprint(f'[LOG] Save KDE result')
     with open(kde_result_path, 'w') as kde_result_file:
-        for x, y in zip(x_plot[:, 0], numpy.exp(log_dens)):
+        for x, y in zip(xs[:, 0], numpy.exp(log_kde_dens)):
             kde_result_file.write(f'{x}\t{y}\n')
 
 
