@@ -56,8 +56,7 @@ def main():
                 # path2: a path of a plot after finding local extreama
                 var_tsv_path = f'{ks_test_out_dir}/{cell_line}.{purity_tag}.{depth}.tsv'
                 kde_result_path = f'{kde_out_dir}/kde_result_{cell_line}_{purity_tag}_{depth}.txt'
-                kde_plot_path = f'{kde_out_dir}/kde_curve_{cell_line}_{purity_tag}_{depth}.png'
-                kde_plot_path2 = f'{kde_out_dir}/kde_curve_2_{cell_line}_{purity_tag}_{depth}.png'
+                kde_plot_path = f'{kde_out_dir}/kde_curve_2_{cell_line}_{purity_tag}_{depth}.png'
                 kde_plot_title = f'Gaussian_KDE_{cell_line}_{depth}_{purity_tag}'
                 local_extrema_txt_path = f'{kde_out_dir}/local_extreme_vaf_{purity_tag}_{depth}.txt'
 
@@ -65,8 +64,9 @@ def main():
                     continue
 
                 cmd = f'{script} vaf_hist_kde {kde_result_path} {var_tsv_path} {kde_bandwidth};'
-                cmd += f'{script} find_local_extrema {kde_plot_path2} {local_extrema_txt_path} ' \
-                       f'{kde_result_path} {var_tsv_path} {kde_plot_title} {kde_bandwidth};'
+                cmd += f'{script} find_local_extrema {local_extrema_txt_path} {kde_result_path};'
+                cmd += f'{script} draw_plot {kde_plot_path} {kde_result_path} {var_tsv_path} ' \
+                       f'{local_extrema_txt_path} {kde_plot_title} {kde_bandwidth};'
 
                 if is_test:
                     print(cmd)
@@ -120,15 +120,13 @@ def vaf_hist_kde(kde_result_path, var_tsv_path, kde_bandwidth):
             kde_result_file.write(f'{x}\t{y}\n')
 
 
-def find_local_extrema(out_plot_path, local_extrema_txt_path, kde_result_path,
-                       var_tsv_path, kde_plot_title, kde_bandwidth):
+def find_local_extrema(local_extrema_txt_path, kde_result_path):
     """
     The function finds local minima and local maxima from smoothed histogram.
     The results are going to be saved as a txt file and represented on a newly drawn plot.
     By finding local extrema, we can divide homozygous variants and heterozygous variants.
     """
     eprint(f'[LOG] Find local minima and maxima of KDE curve')
-    kde_bandwidth = eval(kde_bandwidth)
     list_x = []
     list_kde = []
 
@@ -147,6 +145,23 @@ def find_local_extrema(out_plot_path, local_extrema_txt_path, kde_result_path,
     local_maxima_indices = local_extrema_filter(local_maxima_indices, list_x, list_kde, numpy.greater)
     local_minima_indices = local_extrema_filter(local_minima_indices, list_x, list_kde, numpy.less)
 
+    eprint(f'[LOG] Save local minima and maxima')
+    vaf_to_label = {}  # key: a VAF, value: lmax (local maximum) or lmin (local minimum)
+
+    for lmax_idx in local_maxima_indices:
+        lmax_vaf = list_x[lmax_idx]
+        vaf_to_label[lmax_vaf] = 'lmax'
+
+    for lmin_idx in local_minima_indices:
+        lmin_vaf = list_x[lmin_idx]
+        vaf_to_label[lmin_vaf] = 'lmin'
+
+    with open(local_extrema_txt_path, 'w') as local_extrema_txt_file:
+        for vaf in sorted(vaf_to_label.keys()):
+            print(vaf, vaf_to_label[vaf], sep='\t', file=local_extrema_txt_file)
+
+
+def draw_plot(out_plot_path, var_tsv_path, kde_result_path, local_extrema_path, kde_plot_title, kde_bandwidth):
     eprint('[LOG] Construct a VAF histrogram for plotting')
     vaf_list = []
 
@@ -159,54 +174,59 @@ def find_local_extrema(out_plot_path, local_extrema_txt_path, kde_result_path,
 
     vaf_list = numpy.array(vaf_list)
     vaf_hist = {}  # key: VAF bins, value: count; dictionary for histogram
-    bins = [round(0.01 * x, 2) for x in range(101)]
 
-    for idx in range(len(bins) - 1):
-        vaf_hist[(bins[idx], bins[idx + 1])] = 0  # initialize by 0
+    # initialization
+    for i in range(101):
+        vaf_hist[round(0.01 * i, 2)] = 0
 
     for vaf in vaf_list:
-        check = False  # check if data is counted
+        vaf_hist[round(vaf, 2)] += 1
 
-        for key in sorted(vaf_hist.keys(), key=lambda x: x[0]):
-            if key[0] <= vaf < key[1]:  # binning for histogram
-                vaf_hist[key] += 1
-                check = True
-                break
+    eprint(f'[LOG] Read KDE results')
+    list_x = []
+    list_kde = []
 
-        if not check:  # if data is not counted, the data is 1.
-            if vaf == 1.00:
-                vaf_hist[(0.99, 1.00)] += 1
-            else:
-                sys.exit(f'[ERROR] Invalid VAF: {vaf}')
+    with open(kde_result_path, 'r') as kde_file:
+        for line in kde_file:
+            cols = line.strip('\n').split('\t')
+            list_x.append(float(cols[0]))
+            list_kde.append(float(cols[1]))
 
-    eprint(f'[LOG] Save local extrema as a text and represent them on the plot')
+    eprint(f'[LOG] Read local extrema')
+    vaf_to_label = {}  # key: a VAF, value: lmax (local maximum) or lmin (local minimum)
+
+    with open(local_extrema_path, 'r') as lextrema_file:
+        for line in lextrema_file:
+            cols = line.strip().split('\t')
+            vaf_to_label[float(cols[0])] = cols[1]
+
+    eprint(f'[LOG] Draw a plot containing all information')
     fig, ax1 = plt.subplots()
     ax1.set_xlabel('VAF')
     ax1.set_ylabel('Density')
     plt.title(kde_plot_title)
-    color = 'black'
-    ax1.plot(list_x, list_kde, color=color, label=f'bandwidth: {kde_bandwidth:.2f}')
 
-    vaf_to_label = {}  # key: a VAF, value: lmax (local maximum) or lmin (local minimum)
+    # plot KDE results
+    ax1.plot(list_x, list_kde, color='black', label=f'bandwidth: {kde_bandwidth:.2f}')
 
-    for lmax_idx in local_maxima_indices:
-        lmax_vaf = list_x[lmax_idx]
-        vaf_to_label[lmax_vaf] = 'lmax'
-        ax1.axvline(lmax_vaf, color='red', linestyle='--')
+    # plot local extrema
+    for lextrema_vaf in vaf_to_label:
+        label = vaf_to_label[lextrema_vaf]
 
-    for lmin_idx in local_minima_indices:
-        lmin_vaf = list_x[lmin_idx]
-        vaf_to_label[lmin_vaf] = 'lmin'
-        ax1.axvline(list_x[lmin_idx], color='blue', linestyle='--')
+        if label == 'lmax':
+            ax1.axvline(lextrema_vaf, color='red', linestyle='--')
+        else:
+            ax1.axvline(lextrema_vaf, color='blue', linestyle='--')
 
     ax1.legend(loc='upper left')
 
+    # plot the VAF histogram
     ax2 = ax1.twinx()
     ax2.set_ylabel('Frequency')
-    total_count_high_lodt = sum(vaf_hist.values())
-    ax2.plot([round((x[0] + x[1]) / 2, 2) for x in sorted(vaf_hist.keys(), key=lambda x:x[0])],
-             [vaf_hist[x] / total_count_high_lodt for x in sorted(vaf_hist.keys(), key=lambda x:x[0])],
-             'g--', label='histogram (N: %s)' % total_count_high_lodt)
+    var_cnt = 0
+    ax2.plot([round(x, 2) for x in sorted(vaf_hist.keys(), key=lambda x:x[0])],
+             [vaf_hist[x] / var_cnt for x in sorted(vaf_hist.keys(), key=lambda x:x[0])],
+             'g--', label=f'histogram (N: {var_cnt})')
 
     ax2.tick_params(axis='y')
     ax2.legend(loc='upper right')
@@ -214,10 +234,6 @@ def find_local_extrema(out_plot_path, local_extrema_txt_path, kde_result_path,
     fig.tight_layout()
     plt.savefig(out_plot_path)
     plt.close()
-
-    with open(local_extrema_txt_path, 'w') as local_extrema_txt_file:
-        for vaf in sorted(vaf_to_label.keys()):
-            print(vaf, vaf_to_label[vaf], sep='\t', file=local_extrema_txt_file)
 
 
 def local_extrema_filter(lextrema_indices, xs, ys, comparator):
