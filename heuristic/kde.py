@@ -23,7 +23,7 @@ def main():
     # job scheduler settings
     script = os.path.abspath(__file__)
     queue = '24_730.q'
-    is_test = False
+    is_test = True
 
     prev_job_prefix = 'Minu.VAF.KS-Test.and.Filtering'
     job_name_prefix = 'Minu.VAF.Hist.KDE'
@@ -33,7 +33,7 @@ def main():
     cells = ['HCC1143', 'HCC1954']
     depths = ['30x']
     norm_contams = [2.5, 5, 7.5, 10, 20, 30, 40, 50, 60, 70, 80, 90, 95]  # unit: percent
-    kde_bandwidth = 0.03
+    kde_bandwidth = 0.07
 
     # path settings
     ks_test_result_dir = f'{PROJECT_DIR}/results/heuristic/ks-test'
@@ -161,7 +161,16 @@ def find_local_extrema(local_extrema_txt_path, kde_result_path):
 
 
 def draw_plot(out_plot_path, var_tsv_path, kde_result_path, local_extrema_path, kde_plot_title, kde_bandwidth):
-
+    """
+    # TODO
+    :param out_plot_path:
+    :param var_tsv_path:
+    :param kde_result_path:
+    :param local_extrema_path:
+    :param kde_plot_title:
+    :param kde_bandwidth:
+    :return:
+    """
     kde_bandwidth = eval(kde_bandwidth)
     vaf_list = []
 
@@ -204,6 +213,11 @@ def draw_plot(out_plot_path, var_tsv_path, kde_result_path, local_extrema_path, 
             cols = line.strip().split('\t')
             vaf_to_label[float(cols[0])] = cols[1]
 
+    # get original tumor purity
+    purity_tag = kde_plot_title.split('_')[-1]
+    purity_pct = int(purity_tag.split('t')[1])
+    tumor_purity = purity_pct / 100
+
     eprint(f'[LOG] Draw a plot containing all information')
     fig, ax1 = plt.subplots()
     ax1.set_xlabel('VAF')
@@ -211,7 +225,7 @@ def draw_plot(out_plot_path, var_tsv_path, kde_result_path, local_extrema_path, 
     plt.title(kde_plot_title)
 
     # plot KDE results
-    ax1.plot(list_x, list_kde, color='black', label=f'bandwidth: {kde_bandwidth:.2f}')
+    ax1.plot(list_x, list_kde, color='#8a8a8a', label=f'bandwidth: {kde_bandwidth:.2f}')
 
     # plot local extrema
     for lextrema_vaf in vaf_to_label:
@@ -221,6 +235,10 @@ def draw_plot(out_plot_path, var_tsv_path, kde_result_path, local_extrema_path, 
             ax1.axvline(lextrema_vaf, color='red', linestyle='--')
         else:
             ax1.axvline(lextrema_vaf, color='blue', linestyle='--')
+
+    # plot original tumor purity
+    ax1.axvline(tumor_purity / 2, color='black', linestyle='-.')  # heterozygous
+    ax1.axvline(tumor_purity, color='black', linestyle='-.')  # homozygous
 
     ax1.legend(loc='upper left')
 
@@ -314,7 +332,8 @@ def _local_extrema_filter(lextrema_indices, xs, ys, comparator):
         print(left_slope, right_slope)
 
         if left_penalty < penalty_cutoff and right_penalty < penalty_cutoff:
-            if (left_slope * right_slope < 0) and (abs(left_slope) > 0.5 and abs(right_slope) > 0.5):
+            if (left_slope * right_slope < 0) \
+                    and (round(abs(left_slope), 1) >= 0.2 and round(abs(right_slope), 1) >= 0.2):
                 filtered_lextrema_indices.append(lextrema_idx)
 
         print(left_penalty, right_penalty)
