@@ -27,14 +27,14 @@ class _Variant:
         return f'{self.chrom}\t{self.pos}\t{self.ref}\t{self.alt}\t{self.lodt}\t{self.vaf}'
 
     def parse_tsv_entry(self, tsv_entry):
-        # TSV fields: chrom, pos, ref, alt, LODt score, VAF
-        tsv_fields = tsv_entry.strip().split('\t')
-        self.chrom = tsv_fields[0]
-        self.pos = int(tsv_fields[1])
-        self.ref = tsv_fields[2]
-        self.alt = tsv_fields[3]
-        self.lodt = float(tsv_fields[4])
-        self.vaf = float(tsv_fields[5])
+        # TSV cols: chrom, pos, ref, alt, LODt score, VAF
+        tsv_cols = tsv_entry.strip().split('\t')
+        self.chrom = tsv_cols[0]
+        self.pos = int(tsv_cols[1])
+        self.ref = tsv_cols[2]
+        self.alt = tsv_cols[3]
+        self.lodt = float(tsv_cols[4])
+        self.vaf = float(tsv_cols[5])
 
     @staticmethod
     def parse_tsv_file(tsv_file_path):
