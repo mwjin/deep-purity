@@ -1,6 +1,6 @@
 #!/extdata6/Doyeon/anaconda3/envs/deep-purity/bin/python3.6
 """
-# TODO
+Gaussian kernel density estimation of VAF histograms
 """
 import numpy
 import matplotlib.pyplot as plt
@@ -33,7 +33,7 @@ def main():
     cells = ['HCC1143', 'HCC1954']
     depths = ['30x']
     norm_contams = [2.5, 5, 7.5, 10, 20, 30, 40, 50, 60, 70, 80, 90, 95]  # unit: percent
-    kde_bandwidth = 0.07
+    kde_bandwidth = 'rule-of-thumb'
 
     # path settings
     ks_test_result_dir = f'{PROJECT_DIR}/results/heuristic/ks-test'
@@ -90,7 +90,6 @@ def vaf_hist_kde(kde_result_path, var_tsv_path, kde_bandwidth):
     :param kde_bandwidth: a bandwidth for KDE
     """
     eprint('[LOG] Construct a VAF histrogram')
-    kde_bandwidth = eval(kde_bandwidth)
     vaf_list = []
 
     with open(var_tsv_path, 'r') as var_tsv_file:
@@ -102,6 +101,11 @@ def vaf_hist_kde(kde_result_path, var_tsv_path, kde_bandwidth):
 
     vaf_list = numpy.array(vaf_list)
     vaf_hist = {}  # key: VAF bins, value: count; dictionary for histogram
+
+    if kde_bandwidth == 'rule-of-thumb':
+        kde_bandwidth = _get_kde_bandwidth(vaf_list)
+    else:
+        kde_bandwidth = eval(kde_bandwidth)
 
     # initialization
     for i in range(101):
@@ -162,16 +166,8 @@ def find_local_extrema(local_extrema_txt_path, kde_result_path):
 
 def draw_plot(out_plot_path, var_tsv_path, kde_result_path, local_extrema_path, kde_plot_title, kde_bandwidth):
     """
-    # TODO
-    :param out_plot_path:
-    :param var_tsv_path:
-    :param kde_result_path:
-    :param local_extrema_path:
-    :param kde_plot_title:
-    :param kde_bandwidth:
-    :return:
+    Draw a plot of the VAF histogram, KDE estimation result, and its local extrema
     """
-    kde_bandwidth = eval(kde_bandwidth)
     vaf_list = []
 
     eprint('[LOG] Construct a VAF histrogram for plotting')
@@ -184,6 +180,11 @@ def draw_plot(out_plot_path, var_tsv_path, kde_result_path, local_extrema_path, 
 
     vaf_list = numpy.array(vaf_list)
     vaf_hist = {}  # key: VAF bins, value: count; dictionary for histogram
+
+    if kde_bandwidth == 'rule-of-thumb':
+        kde_bandwidth = _get_kde_bandwidth(vaf_list)
+    else:
+        kde_bandwidth = eval(kde_bandwidth)
 
     # initialization
     for i in range(101):
@@ -256,6 +257,17 @@ def draw_plot(out_plot_path, var_tsv_path, kde_result_path, local_extrema_path, 
     fig.tight_layout()
     plt.savefig(out_plot_path)
     plt.close()
+
+
+def _get_kde_bandwidth(values):
+    """
+    Calculate an appropriate bandwidth using a rule-of-thumb bandwidth estimator (Silverman, 1986)
+    """
+    val_cnt = len(values)
+    val_std = float(numpy.std(values))
+    bandwidth = ((4 * val_std ** 5) / (3 * val_cnt)) ** (1 / 5)
+
+    return bandwidth
 
 
 def _local_extrema_filter(lextrema_indices, xs, ys, comparator):
@@ -339,17 +351,6 @@ def _local_extrema_filter(lextrema_indices, xs, ys, comparator):
         print(left_penalty, right_penalty)
 
     return numpy.array(filtered_lextrema_indices)
-
-
-def get_kde_bandwidth(values):
-    """
-    Calculate an appropriate bandwidth using a rule-of-thumb bandwidth estimator (Silverman, 1986)
-    """
-    val_cnt = len(values)
-    val_std = float(numpy.std(values))
-    bandwidth = ((4 * val_std ** 5) / (3 * val_cnt)) ** (1 / 5)
-
-    return bandwidth
 
 
 def vaf_hist_kde_old(out_dir, ks_result_dir, diptest_result_path, silverman_result_path):
