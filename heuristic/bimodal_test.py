@@ -17,9 +17,9 @@ def main():
     queue = '24_730.q'
     is_test = True
 
-    job_name_prefix = 'Minu.VAF.Hist.Bimodal.Test'
-    prev_job_prefix = 'Minu.VAF.KS-Test.and.Filtering'
-    log_dir = f'{PROJECT_DIR}/log/{job_name_prefix}/{time_stamp()}'
+    job_name_prefix = 'Minu.Purity.Heuristic.VAF.Hist.Bimodal.Test'
+    prev_job_prefix = 'Minu.Purity.Heuristic.VAF.KS-Test.and.Filtering'
+    log_dir = f'{PROJECT_DIR}/log/heuristic/{job_name_prefix}/{time_stamp()}'
 
     # param settings
     cells = ['HCC1143', 'HCC1187', 'HCC1954', 'HCC2218']
