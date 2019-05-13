@@ -18,8 +18,8 @@ purity_to_preds = {}
 with open(pred_result_path, 'r') as pred_result_file:
     for line in pred_result_file:
         cols = line.strip().split('\t')
-        tumor_purity = round(1.0 - float(cols[1]), 3)
-        pred_tumor_purity = round(1.0 - float(cols[2]), 3)
+        tumor_purity = round(float(cols[1]), 3)
+        pred_tumor_purity = round(float(cols[2]), 3)
 
         if not tumor_purity in purity_to_preds:
             purity_to_preds[tumor_purity] = []
