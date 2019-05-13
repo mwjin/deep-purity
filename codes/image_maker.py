@@ -13,6 +13,7 @@ import sys
 import pysam
 import numpy as np
 import pickle
+import random
 import time
 
 from decimal import Decimal
@@ -57,7 +58,7 @@ class ImageMaker(object):
             variants = list(np.random.choice(variants, self.allele_image_width))
 
         variants.sort(key=lambda variant: variant.lodt, reverse=True)
-        variants = variants[:self.allele_image_width]
+        variants = random.sample(variants, self.allele_image_width)
 
         return variants
 
