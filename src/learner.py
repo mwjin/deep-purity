@@ -4,8 +4,10 @@ Make, train, and test our deep learning model
 """
 import pickle
 import random
+import os
 import sys
 import time
+import matplotlib.pyplot as plt
 import numpy as np
 import tensorflow as tf
 import keras
@@ -15,7 +17,7 @@ from keras import backend as kb
 from keras.models import Model, load_model
 from keras.layers import Dense, Dropout, Flatten
 from keras.layers import Conv2D, Input, concatenate
-from keras.callbacks import ModelCheckpoint, EarlyStopping
+from keras.callbacks import ModelCheckpoint, EarlyStopping, History
 
 # constants
 BATCH_SIZE = 32
@@ -128,7 +130,7 @@ def make_base_model(base_model_path):
     model.save(base_model_path)
 
 
-def train_model(train_model_path, base_model_path, train_img_set_path, valid_img_set_path):
+def train_model(train_model_path, base_model_path, train_img_set_path, valid_img_set_path, draw_learning_curve=True):
     """
     Train our model
     """
@@ -158,9 +160,22 @@ def train_model(train_model_path, base_model_path, train_img_set_path, valid_img
 
     # train the model
     model_ckpt = ModelCheckpoint(train_model_path, monitor='val_loss', save_best_only=True, mode='min')
-    early_stop_cond = EarlyStopping(monitor='val_loss', patience=5, verbose=1)
-    model.fit_generator(train_data_generator, epochs=MAX_EPOCH, callbacks=[model_ckpt, early_stop_cond],
+    early_stop_cond = EarlyStopping(monitor='val_loss', patience=10, verbose=1)
+    history = History()
+    model.fit_generator(train_data_generator, epochs=MAX_EPOCH, callbacks=[model_ckpt, early_stop_cond, history],
                         validation_data=valid_data_generator, verbose=1)
+
+    if draw_learning_curve:
+        print('[LOG] Draw learning curve', time.ctime())
+        model_dir, model_filename = os.path.split(train_model_path)
+        model_filename_wo_ext = os.path.splitext(model_filename)[0]
+
+        plot_dir = f'{model_dir}/learning-curve'
+        plot_path = f'{plot_dir}/{model_filename_wo_ext}.png'
+        plot_title = f'Model loss ({model_filename_wo_ext})'
+        os.makedirs(plot_dir, exist_ok=True)
+
+        _draw_learning_curve(plot_path, plot_title, history)
 
     print('[LOG] Training is terminated.', time.ctime())
 
@@ -222,6 +237,25 @@ def _make_keras_metric_func(method):
         return value
 
     return wrapper
+
+
+def _draw_learning_curve(plot_path, plot_title, history):
+    """
+    Draw learning curve using history of keras callbacks
+    Ref: https://machinelearningmastery.com/display-deep-learning-model-training-history-in-keras
+    """
+    train_losses = history.history['loss']
+    val_losses = history.history['val_loss']
+
+    plt.plot(train_losses)
+    plt.plot(val_losses)
+    plt.title(plot_title)
+    plt.ylabel('loss')
+    plt.xlabel('epoch')
+    plt.legend(['train', 'validation'], loc='upper left')
+    plt.yscale('log')
+    plt.savefig(plot_path)
+    plt.close()
 
 
 if __name__ == '__main__':
