@@ -15,7 +15,7 @@ from keras import backend as kb
 from keras.models import Model, load_model
 from keras.layers import Dense, Dropout, Flatten
 from keras.layers import Conv2D, Input, concatenate
-from keras.callbacks import ModelCheckpoint
+from keras.callbacks import ModelCheckpoint, EarlyStopping
 
 # constants
 BATCH_SIZE = 32
@@ -130,7 +130,7 @@ def make_base_model(base_model_path):
 
 def train_model(train_model_path, base_model_path, train_img_set_path, valid_img_set_path):
     """
-    train our model
+    Train our model
     """
     print('[LOG] Load a base model', time.ctime())
     model = load_model(base_model_path)
@@ -156,8 +156,10 @@ def train_model(train_model_path, base_model_path, train_img_set_path, valid_img
     train_data_generator = DataGenerator(train_image_paths, **params)
     valid_data_generator = DataGenerator(valid_image_paths, **params)
 
+    # train the model
     model_ckpt = ModelCheckpoint(train_model_path, monitor='val_loss', save_best_only=True, mode='min')
-    model.fit_generator(train_data_generator, epochs=MAX_EPOCH, callbacks=[model_ckpt],
+    early_stop_cond = EarlyStopping(monitor='val_loss', patience=5, verbose=1)
+    model.fit_generator(train_data_generator, epochs=MAX_EPOCH, callbacks=[model_ckpt, early_stop_cond],
                         validation_data=valid_data_generator, verbose=1)
 
     print('[LOG] Training is terminated.', time.ctime())
