@@ -3,6 +3,7 @@
 Make, train, and test our deep learning model
 """
 import pickle
+import random
 import sys
 import time
 import numpy as np
@@ -127,26 +128,23 @@ def make_base_model(base_model_path):
     model.save(base_model_path)
 
 
-def train_model(train_model_path, base_model_path, train_img_set_path):
+def train_model(train_model_path, base_model_path, train_img_set_path, valid_img_set_path):
     """
     train our model
     """
-    print('Start', time.ctime())
-    precision_func = _make_keras_metric_func(tf.metrics.precision)
-    recall_func = _make_keras_metric_func(tf.metrics.recall)
-    model = load_model(base_model_path, custom_objects={'precision': precision_func, 'recall': recall_func})
+    print('[LOG] Load a base model', time.ctime())
+    model = load_model(base_model_path)
 
-    print('Model loaded, start training', time.ctime())
+    print('[LOG] Start training the model', time.ctime())
     with open(train_img_set_path, 'r') as train_img_set_file:
-        image_paths = train_img_set_file.read().splitlines()
+        train_image_paths = train_img_set_file.read().splitlines()
 
-    image_cnt = len(image_paths)
-    train_size = int(image_cnt * 0.8)
+    with open(valid_img_set_path, 'r') as valid_img_set_file:
+        valid_image_paths = valid_img_set_file.read().splitlines()
 
-    np.random.shuffle(image_paths)
-    train_image_paths = image_paths[:train_size]  # for training
-    val_image_paths = image_paths[train_size:]  # for validation
-    steps_per_epoch = np.ceil(len(train_image_paths) / BATCH_SIZE)
+    # down-sample the images to reduce training time consuming
+    train_image_paths = random.sample(train_image_paths, int(len(train_image_paths) * 0.7))
+    valid_image_paths = random.sample(valid_image_paths, int(len(valid_image_paths) * 0.3))
 
     params = {
         'batch_size': BATCH_SIZE,
@@ -156,13 +154,13 @@ def train_model(train_model_path, base_model_path, train_img_set_path):
     }
 
     train_data_generator = DataGenerator(train_image_paths, **params)
-    val_data_generator = DataGenerator(val_image_paths, **params)
+    valid_data_generator = DataGenerator(valid_image_paths, **params)
 
-    model_ckpt = ModelCheckpoint(train_model_path, monitor='loss', save_best_only=True, mode='min')
-    model.fit_generator(train_data_generator, steps_per_epoch=steps_per_epoch,
-                        epochs=MAX_EPOCH, callbacks=[model_ckpt], validation_data=val_data_generator, verbose=1)
+    model_ckpt = ModelCheckpoint(train_model_path, monitor='val_loss', save_best_only=True, mode='min')
+    model.fit_generator(train_data_generator, epochs=MAX_EPOCH, callbacks=[model_ckpt],
+                        validation_data=valid_data_generator, verbose=1)
 
-    print('Ended training', time.ctime())
+    print('[LOG] Training is terminated.', time.ctime())
 
 
 def test_model(pred_out_path, train_model_path, test_img_set_path):
