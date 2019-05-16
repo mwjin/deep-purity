@@ -165,18 +165,16 @@ def train_model(train_model_path, base_model_path, train_img_set_path, valid_img
     print('[LOG] Training is terminated.', time.ctime())
 
 
-def test_model(pred_out_path, train_model_path, test_img_set_path):
+def test_model(predict_result_path, train_model_path, test_img_set_path):
     """
-    test our model
+    Test our trained model by predicting numerical values corresponding to each image
     """
-    print('Start', time.ctime())
-    precision_func = _make_keras_metric_func(tf.metrics.precision)
-    recall_func = _make_keras_metric_func(tf.metrics.recall)
-    model = load_model(train_model_path, custom_objects={'precision': precision_func, 'recall': recall_func})
+    print('[LOG] Load the trained model', time.ctime())
+    model = load_model(train_model_path)
 
-    print('Model loaded, start prediction', time.ctime())
+    print('[LOG] Start prediction', time.ctime())
     with open(test_img_set_path, 'r') as test_img_set_file:
-        image_paths = test_img_set_file.read().splitlines()
+        test_image_paths = test_img_set_file.read().splitlines()
 
     batch_size = 1
     params = {
@@ -185,15 +183,15 @@ def test_model(pred_out_path, train_model_path, test_img_set_path):
         'num_channels': 9,
         'shuffle': False
     }
-    test_data_generator = DataGenerator(image_paths, **params)
+    test_data_generator = DataGenerator(test_image_paths, **params)
+    predict_values = model.predict_generator(test_data_generator)
+    real_values = [pickle.load(open(image_path, 'rb'))['tumor_purity'] for image_path in test_image_paths]
 
-    step_size = np.ceil(len(image_paths) / batch_size)
-    predictions = model.predict_generator(test_data_generator, steps=step_size)
-    y_labels = [pickle.load(open(image_path, 'rb'))['tumor_purity'] for image_path in image_paths]
+    with open(predict_result_path, 'w') as pred_out_file:
+        for image_path, real_value, predict_value in zip(test_image_paths, real_values, predict_values):
+            print(*[image_path, real_value, *predict_value], sep='\t', file=pred_out_file)
 
-    with open(pred_out_path, 'w') as pred_out_file:
-        for image_path, y_label, pred in zip(image_paths, y_labels, predictions):
-            print(*[image_path, y_label, *pred], sep='\t', file=pred_out_file)
+    print('[LOG] Prediction is terminated.', time.ctime())
 
 
 def _build_cnn_model(input_tensor, input_shape, input_name):
