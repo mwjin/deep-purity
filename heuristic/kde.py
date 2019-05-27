@@ -33,18 +33,19 @@ def main():
     cells = ['HCC1143', 'HCC1954']
     depths = ['30x']
     norm_contams = [2.5, 5, 7.5, 10, 20, 30, 40, 50, 60, 70, 80, 90, 95]  # unit: percent
-    kde_bandwidth = 'rule-of-thumb'
+    kde_bandwidth = 0.05
+    top_var_cnt = 3200
 
     # path settings
-    ks_test_result_dir = f'{PROJECT_DIR}/results/heuristic/ks-test'
-    kde_result_dir = f'{PROJECT_DIR}/results/heuristic/kde-normal-filt/{kde_bandwidth}'
+    var_tsv_dir = f'{PROJECT_DIR}/results/heuristic/filt-variants-top-lodt/{top_var_cnt}'
+    kde_result_dir = f'{PROJECT_DIR}/results/heuristic/kde-normal-top-lodt/{top_var_cnt}'
 
     jobs = []  # a list of the 'Job' class
 
     for cell_line in cells:
         for depth in depths:
             # in-loop path settings
-            ks_test_out_dir = f'{ks_test_result_dir}/{cell_line}/{depth}'  # input
+            ks_test_out_dir = f'{var_tsv_dir}/{cell_line}/{depth}'  # input
             kde_out_dir = f'{kde_result_dir}/{cell_line}/{depth}'  # output
             os.makedirs(kde_out_dir, exist_ok=True)
 
@@ -60,21 +61,19 @@ def main():
                 kde_plot_title = f'Gaussian_KDE_{cell_line}_{depth}_{purity_tag}'
                 local_extrema_txt_path = f'{kde_out_dir}/local_extreme_vaf_{purity_tag}_{depth}.txt'
 
-                if not os.path.isfile(var_tsv_path):
-                    continue
+                if os.path.isfile(var_tsv_path):
+                    cmd = f'{script} vaf_hist_kde {kde_result_path} {var_tsv_path} {kde_bandwidth};'
+                    cmd += f'{script} find_local_extrema {local_extrema_txt_path} {kde_result_path};'
+                    cmd += f'{script} draw_plot {kde_plot_path} {var_tsv_path} {kde_result_path} ' \
+                           f'{local_extrema_txt_path} {kde_plot_title} {kde_bandwidth};'
 
-                cmd = f'{script} vaf_hist_kde {kde_result_path} {var_tsv_path} {kde_bandwidth};'
-                cmd += f'{script} find_local_extrema {local_extrema_txt_path} {kde_result_path};'
-                cmd += f'{script} draw_plot {kde_plot_path} {var_tsv_path} {kde_result_path} ' \
-                       f'{local_extrema_txt_path} {kde_plot_title} {kde_bandwidth};'
-
-                if is_test:
-                    print(cmd)
-                else:
-                    one_job_name = f'{job_name_prefix}.{cell_line}.{depth}.{purity_tag}'
-                    prev_job_name = f'{prev_job_prefix}.{cell_line}.{depth}.{purity_tag}'
-                    one_job = Job(one_job_name, cmd, hold_jid=prev_job_name)
-                    jobs.append(one_job)
+                    if is_test:
+                        print(cmd)
+                    else:
+                        one_job_name = f'{job_name_prefix}.{cell_line}.{depth}.{purity_tag}'
+                        prev_job_name = f'{prev_job_prefix}.{cell_line}.{depth}.{purity_tag}'
+                        one_job = Job(one_job_name, cmd, hold_jid=prev_job_name)
+                        jobs.append(one_job)
 
     if not is_test:
         qsub_sge(jobs, queue, log_dir)
@@ -252,6 +251,7 @@ def draw_plot(out_plot_path, var_tsv_path, kde_result_path, local_extrema_path, 
              'g--', label=f'histogram (N: {var_cnt})')
 
     ax2.tick_params(axis='y')
+    ax2.set_ylim(0, 0.15)
     ax2.legend(loc='upper right')
 
     fig.tight_layout()
