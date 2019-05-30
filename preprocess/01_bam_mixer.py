@@ -26,50 +26,65 @@ def main():
     log_dir = f'{PROJECT_DIR}/log/{job_name_prefix}/{time_stamp()}'
 
     # param settings
-    cell_line = 'HCC1954'
-    depth = '30x'
+    cell_lines = ['HCC1143', 'HCC1954', 'HCC1187', 'HCC2218']
+    depths = ['10x', '20x', '30x', '40x', '50x']
 
-    # path settings
+    # script settings
     samtools = '/extdata6/Doyeon/anaconda3/bin/samtools'
     java = '/extdata6/Doyeon/anaconda3/envs/deep-purity/bin/java'
     picard = '/extdata6/Beomman/bins/picard/build/libs/picard.jar'
-    tumor_bam_path = f'/extdata6/Beomman/raw-data/tcga-benchmark4/{cell_line}.TUMOR.{depth}.compare.bam'
-    norm_bam_path = f'/extdata6/Beomman/raw-data/tcga-benchmark4/{cell_line}.NORMAL.{depth}.compare.bam'
 
-    # output settings
-    result_dir = f'{PROJECT_DIR}/results/mixed-bam'
-    result_bam_path_format = f'{result_dir}/{cell_line}.{depth}.%s.bam'
-    temp_dir = f'{result_dir}/temp'
-    os.makedirs(temp_dir, exist_ok=True)
-
+    # path settings
+    ori_bam_dir = '/extdata4/baeklab/minwoo/data/TCGA-HCC'
     jobs = []  # a list of the 'Job' class
-    norm_contam_pcts = [2.5, 5, 7.5, 10, 20, 30, 40, 50, 60, 70, 80, 90, 95]
+    normal_contams = [2.5, 5, 7.5, 10, 20, 30, 40, 50, 60, 70, 80, 90, 95]
 
-    for norm_pct in norm_contam_pcts:
-        tumor_pct = 100 - norm_pct
-        norm_ratio = norm_pct / 100
-        tumor_ratio = tumor_pct / 100
+    for cell_line in cell_lines:
+        for depth in depths:
+            # in-loop path settings
+            tumor_bam_path = f'{ori_bam_dir}/{cell_line}/{cell_line}.TUMOR.{depth}.bam'
+            norm_bam_path = f'{ori_bam_dir}/{cell_line}/{cell_line}.NORMAL.{depth}.bam'
+            mix_bam_dir = f'/extdata4/baeklab/minwoo/data/TCGA-HCC-MIX/{cell_line}/{depth}'
+            temp_dir = f'{mix_bam_dir}/temp'
+            os.makedirs(temp_dir, exist_ok=True)
 
-        # in-loop path settings
-        tag = 'n%st%s' % (norm_pct, tumor_pct)
-        result_bam_path = result_bam_path_format % tag
-        tumor_temp_bam_path = f'{temp_dir}/{os.path.basename(tumor_bam_path)}'
-        tumor_temp_bam_path = tumor_temp_bam_path.replace('.bam', '.%s%%.bam' % tumor_pct)
-        norm_temp_bam_path = f'{temp_dir}/{os.path.basename(norm_bam_path)}'
-        norm_temp_bam_path = norm_temp_bam_path.replace('.bam', '.%s%%.bam' % norm_pct)
+            for contam in normal_contams:
+                purity = 100 - contam
+                norm_ratio = contam / 100
+                tumor_ratio = purity / 100
 
-        cmd = f'{samtools} view -b -s {(SEED + tumor_ratio):.3f} {tumor_bam_path} > {tumor_temp_bam_path};' \
-              f'{samtools} view -b -s {(SEED + norm_ratio):.3f} {norm_bam_path} > {norm_temp_bam_path};' \
-              f'{java} -jar {picard} MergeSamFiles I={tumor_temp_bam_path} I={norm_temp_bam_path} ' \
-              f'O={result_bam_path};' \
-              f'{samtools} index {result_bam_path};'
+                # in-loop path settings
+                purity_tag = f'n{int(contam)}t{int(purity)}'
+                mix_bam_path = f'{mix_bam_dir}/{cell_line}.{purity_tag}.{depth}.bam'
 
-        if is_test:
-            print(cmd)
-        else:
-            one_job_name = f'{job_name_prefix}.{cell_line}.{depth}.{tag}'
-            one_job = Job(one_job_name, cmd)
-            jobs.append(one_job)
+                tumor_temp_bam_path = f'{temp_dir}/{os.path.basename(tumor_bam_path)}'
+                tumor_temp_bam_path = tumor_temp_bam_path.replace('.bam', '.%d%%.bam' % purity)
+                norm_temp_bam_path = f'{temp_dir}/{os.path.basename(norm_bam_path)}'
+                norm_temp_bam_path = norm_temp_bam_path.replace('.bam', '.%d%%.bam' % contam)
+
+                cmd = f'{samtools} view -b -s {(SEED + tumor_ratio):.3f} {tumor_bam_path} > {tumor_temp_bam_path};' \
+                      f'{samtools} view -b -s {(SEED + norm_ratio):.3f} {norm_bam_path} > {norm_temp_bam_path};' \
+                      f'{java} -jar {picard} MergeSamFiles I={tumor_temp_bam_path} I={norm_temp_bam_path} ' \
+                      f'O={mix_bam_path};' \
+                      f'{samtools} index {mix_bam_path};'
+
+                if is_test:
+                    print(cmd)
+                else:
+                    one_job_name = f'{job_name_prefix}.{cell_line}.{depth}.{purity_tag}'
+                    one_job = Job(one_job_name, cmd)
+                    jobs.append(one_job)
+
+            # for removing the temporary directory
+            temp_rm_cmd = f'rm -rf {temp_dir};'
+
+            if is_test:
+                print(temp_rm_cmd)
+            else:
+                rm_job_name = f'{job_name_prefix}.{cell_line}.{depth}.Remove.Temp'
+                prev_job_name = f'{job_name_prefix}.{cell_line}.{depth}.*'
+                rm_job = Job(rm_job_name, temp_rm_cmd, hold_jid=prev_job_name)
+                jobs.append(rm_job)
 
     if not is_test:
         qsub_sge(jobs, queue, log_dir)
