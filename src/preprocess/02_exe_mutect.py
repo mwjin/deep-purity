@@ -29,29 +29,46 @@ def main():
     log_dir = f'{PROJECT_DIR}/log/{job_name_prefix}/{time_stamp()}'
 
     # param settings
-    cell_line = 'HCC1954'
+    cell_line = 'HCC2218'
     depth = '30x'
 
     # path settings
     # input
-    in_bam_dir = f'/extdata4/baeklab/minwoo/data/TCGA-HCC-MIX/{cell_line}/{depth}'
+    in_bam_dir = f'/extdata4/baeklab/minwoo/data/TCGA-HCC-DEPTH-NORM-MIX/{cell_line}/{depth}'
     in_bam_path_format = f'{in_bam_dir}/{cell_line}.%s.{depth}.bam'
-    norm_bam_path = f'/extdata6/Beomman/raw-data/tcga-benchmark4/{cell_line}.NORMAL.{depth}.compare.bam'  # ctrl
+    norm_bam_path = f'/extdata4/baeklab/minwoo/data/TCGA-HCC-DEPTH-NORM/' \
+                    f'{cell_line}/{cell_line}.NORMAL.{depth}.bam'  # ctrl
+
     # output
-    out_dir = f'{PROJECT_DIR}/results/mutect-output/{cell_line}/{depth}'
+    out_dir = f'{PROJECT_DIR}/results/mutect-output-depth-norm/{cell_line}/{depth}'
     out_vcf_path_format = f'{out_dir}/{cell_line}.%s.{depth}.vcf'
     out_mto_path_format = f'{out_dir}/{cell_line}.%s.{depth}.mto'
     os.makedirs(out_dir, exist_ok=True)
+
+    ref_genome_dict = {
+        'HCC1143': '/extdata6/Minwoo/data/ref-genome/hg19/Homo_sapiens_assembly19.fasta',
+        'HCC1954': '/extdata6/Minwoo/data/ref-genome/hg19/Homo_sapiens_assembly19.fasta',
+        'HCC1187': '/extdata6/Beomman/raw-data/ref/Homo_sapiens/NCBI/GRCh38Decoy/Sequence/WholeGenomeFasta/genome.fa',
+        'HCC2218': '/extdata6/Beomman/raw-data/ref/Homo_sapiens/NCBI/GRCh38Decoy/Sequence/WholeGenomeFasta/genome.fa',
+    }
+
+    dbsnp_dict = {
+        'HCC1143': '/extdata6/Beomman/raw-data/dbsnp/dbsnp150/compressed/hg19/common_all_20170710.hg19.vcf.gz',
+        'HCC1954': '/extdata6/Beomman/raw-data/dbsnp/dbsnp150/compressed/hg19/common_all_20170710.hg19.vcf.gz',
+        'HCC1187': '/extdata6/Beomman/raw-data/dbsnp/dbsnp150/compressed/hg38/common_all_20170710.hg38.vcf.gz',
+        'HCC2218': '/extdata6/Beomman/raw-data/dbsnp/dbsnp150/compressed/hg38/common_all_20170710.hg38.vcf.gz',
+    }
 
     # constant paths for mutect
     java = '/usr/java/latest/bin/java'  # must be JDK1.7
     temp_dir = f'{out_dir}/log'  # error log files will be stored.
     mutect = '/extdata6/Beomman/bins/mutect/mutect-1.1.7.jar'
-    ref_genome = '/extdata6/Minwoo/data/ref-genome/hg19/Homo_sapiens_assembly19.fasta'
-    dbsnp_path = '/extdata6/Beomman/raw-data/dbsnp/dbsnp150/compressed/hg19/common_all_20170710.hg19.vcf.gz'
+    ref_genome = ref_genome_dict[cell_line]
+    dbsnp_path = dbsnp_dict[cell_line]
 
     jobs = []  # a list of the 'Job' class
-    norm_contam_pcts = [2.5, 5, 7.5, 10, 20, 30, 40, 50, 60, 70, 80, 90, 95]
+    # norm_contam_pcts = [2.5, 5, 7.5, 10, 20, 30, 40, 50, 60, 70, 80, 90, 95]
+    norm_contam_pcts = [40, 50, 5, 80, 95]
 
     for norm_pct in norm_contam_pcts:
         tumor_pct = 100 - norm_pct

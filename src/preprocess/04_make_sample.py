@@ -30,7 +30,7 @@ class _Variant:
         return f'{self.chrom}\t{self.pos}\t{self.ref}\t{self.alt}\t{self.lodt}\t{self.vaf}'
 
     def parse_tsv_entry(self, tsv_entry):
-        # TSV fields: chrom, pos, ref, alt, LODt score, VAF
+        # TSV cols: chrom, pos, ref, alt, LODt score, VAF
         tsv_fields = tsv_entry.strip().split('\t')
         self.chrom = tsv_fields[0]
         self.pos = int(tsv_fields[1])
@@ -68,11 +68,11 @@ def main():
     log_dir = f'{PROJECT_DIR}/log/{job_name_prefix}/{time_stamp()}'
 
     # param settings
-    m = 10000  # No. randomly sampled variants
-    n = 1000  # No. top LODt score variants
+    m = 1000  # No. randomly sampled variants
+    n = 1000
     num_iter = 1000  # No. attempts of sampling
     cell_lines = ['HCC1143', 'HCC1954']
-    depths = ['10x', '20x', '30x', '40x', '50x']
+    depths = ['30x']
     norm_contams = [2.5, 5, 7.5, 10, 20, 30, 40, 50, 60, 70, 80, 90, 95]  # unit: percent
 
     jobs = []  # a list of the 'Job' class
@@ -80,17 +80,17 @@ def main():
     for cell_line in cell_lines:
         for depth in depths:
             # path settings
-            mto_summary_dir = f'{PROJECT_DIR}/results/mto-summary/{cell_line}/{depth}'
-            var_sample_dir = f'{PROJECT_DIR}/results/variant-samples/{cell_line}/{depth}'
+            ori_var_tsv_dir = f'{PROJECT_DIR}/results/variant-data-set-ks/valid/{cell_line}/{depth}'
+            var_sample_dir = f'{PROJECT_DIR}/results/variant-data-set-samples/ks/valid/{cell_line}/{depth}'
 
             for norm_contam in norm_contams:
                 tumor_purity = 100 - norm_contam
                 purity_tag = f'n{int(norm_contam)}t{int(tumor_purity)}'
 
                 # in-loop path settings
-                mto_summary_path = f'{mto_summary_dir}/{cell_line}.{purity_tag}.{depth}.tsv'  # input
+                ori_var_tsv_path = f'{ori_var_tsv_dir}/{cell_line}.{purity_tag}.{depth}.tsv'  # input
 
-                if not os.path.isfile(mto_summary_path):
+                if not os.path.isfile(ori_var_tsv_path):
                     continue
 
                 out_dir = f'{var_sample_dir}/{purity_tag}'
@@ -101,8 +101,8 @@ def main():
                 job_cnt_one_cmd = 40
 
                 for i in range(num_iter):
-                    out_tsv_path = f'{out_dir}/rand_{m}_top_{n}_{i+1:04}.tsv'
-                    cmd += f'{script} make_rand_sample_var_file {out_tsv_path} {mto_summary_path} {m} {n};'
+                    out_tsv_path = f'{out_dir}/rand_{m}_{i+1:04}.tsv'
+                    cmd += f'{script} make_rand_sample_var_file {out_tsv_path} {ori_var_tsv_path} {m};'
 
                     if i % job_cnt_one_cmd == job_cnt_one_cmd - 1:
                         if is_test:
@@ -120,7 +120,7 @@ def main():
         qsub_sge(jobs, queue, log_dir)
 
 
-def make_rand_sample_var_file(out_tsv_path, in_tsv_path, num_rand_var, num_top_lod_var):
+def make_rand_sample_var_file(out_tsv_path, in_tsv_path, num_rand_var, num_top_lod_var=None):
     """
     Parse the input TSV file and randomly sample variants.
     From the variant set, get variants with top LODt score and store essential information of the variants as TSV file.
@@ -130,10 +130,14 @@ def make_rand_sample_var_file(out_tsv_path, in_tsv_path, num_rand_var, num_top_l
     :param out_tsv_path: a path of an output TSV file
     :param in_tsv_path: a path of a input TSV file
     :param num_rand_var: No. of randomly sampled variants
-    :param num_top_lod_var: No. of variants with top LODt scores
+    :param num_top_lod_var: No. of variants with top LODt scores (optional)
     """
     num_rand_var = int(num_rand_var)
-    num_top_lod_var = int(num_top_lod_var)
+
+    if num_top_lod_var is None:
+        num_top_lod_var = num_rand_var
+    else:
+        num_top_lod_var = int(num_top_lod_var)
 
     eprint('[LOG] Parameters')
     eprint(f'[LOG] --- Random sample size: {num_rand_var}')

@@ -21,14 +21,14 @@ def main():
     """
     # job scheduler settings
     queue = '24_730.q'
-    is_test = False
+    is_test = True
     prev_job_prefix = 'Minu.Var.Sampling'
     job_name_prefix = 'Minu.Make.Var.Image'
     log_dir = f'{PROJECT_DIR}/log/{job_name_prefix}/{time_stamp()}'
 
     # path settings
-    image_maker_script = f'{PROJECT_DIR}/codes/MakeImage.py'
-    image_set_dir = f'{PROJECT_DIR}/image-set-test'
+    image_maker_script = f'{PROJECT_DIR}/src/image_maker.py'
+    image_set_dir = f'{PROJECT_DIR}/image-set-test-3'
     os.makedirs(image_set_dir, exist_ok=True)
 
     # param settings
@@ -37,11 +37,10 @@ def main():
     mode = 1  # 0: images of variants (from 03_mto_summary.py), 1: images of variant samples (from 04_make_sample.py)
 
     # for mode 1
-    m = 10000  # No. randomly sampled variants
-    n = 1000  # No. top LODt score variants
+    m = 1000  # No. randomly sampled variants
     num_iter = 1000  # No. attempts of sampling
 
-    cell_lines = ['HCC1954']
+    cell_lines = ['HCC1143', 'HCC1954']
     depths = ['30x']
     norm_contams = [2.5, 5, 7.5, 10, 20, 30, 40, 50, 60, 70, 80, 90, 95]  # unit: percent
 
@@ -88,23 +87,23 @@ def main():
                         jobs.append(one_job)
 
             else:  # make images of random variants
-                image_set_path = f'{image_set_dir}/random_sample_{cell_line}_{depth}.txt'
+                image_set_path = f'{image_set_dir}/random_{m}_{cell_line}_{depth}.txt'
                 image_paths = []
 
                 for norm_contam in norm_contams:
                     tumor_purity = 100 - norm_contam
                     purity_tag = f'n{int(norm_contam)}t{int(tumor_purity)}'
-                    norm_contam_ratio = norm_contam / 100
                     tumor_purity_ratio = tumor_purity / 100
 
                     # in-loop path settings
                     tumor_bam_path = f'{tumor_bam_dir}/{cell_line}.{purity_tag}.{depth}.bam'
-                    var_sample_dir = f'{PROJECT_DIR}/results/variant-samples/{cell_line}/{depth}/{purity_tag}'
+                    var_sample_dir = f'{PROJECT_DIR}/results/variant-samples/{m}/{cell_line}/{depth}/{purity_tag}'
 
                     if not os.path.isdir(var_sample_dir):
                         continue
 
-                    out_image_dir = f'{PROJECT_DIR}/results/variant-sample-images-test/{cell_line}/{depth}/{purity_tag}'
+                    out_image_dir = f'{PROJECT_DIR}/results/variant-samples-images-test/' \
+                                    f'{m}/{cell_line}/{depth}/{purity_tag}'
                     os.makedirs(out_image_dir, exist_ok=True)
 
                     cmd = ''
@@ -112,16 +111,12 @@ def main():
                     job_cnt_one_cmd = 8  # it must be a divisor of {num_iter}.
 
                     for i in range(num_iter):
-                        in_tsv_path = f'{var_sample_dir}/rand_{m}_top_{n}_{i+1:04}.tsv'
-                        out_image_path = f'{out_image_dir}/rand_{m}_top_{n}_{i+1:04}.pkl'
+                        in_tsv_path = f'{var_sample_dir}/rand_{m}_{i+1:04}.tsv'
+                        out_image_path = f'{out_image_dir}/rand_{m}_{i+1:04}.pkl'
                         image_paths.append(out_image_path)
 
-                        cmd += f'{image_maker_script} {in_tsv_path} {norm_contam_ratio} {tumor_bam_path} ' \
-                               f'{norm_bam_path} {out_image_path} {hist_width} {hist_height};'
-                        """
                         cmd += f'{image_maker_script} {out_image_path} {in_tsv_path} ' \
                                f'{tumor_bam_path} {norm_bam_path} {tumor_purity_ratio};'
-                        """
 
                         if i % job_cnt_one_cmd == job_cnt_one_cmd - 1:
                             if is_test:

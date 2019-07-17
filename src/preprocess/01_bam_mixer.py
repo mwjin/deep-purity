@@ -26,16 +26,16 @@ def main():
     log_dir = f'{PROJECT_DIR}/log/{job_name_prefix}/{time_stamp()}'
 
     # param settings
-    cell_lines = ['HCC1143', 'HCC1954', 'HCC1187', 'HCC2218']
-    depths = ['10x', '20x', '30x', '40x', '50x']
+    cell_lines = ['HCC1187', 'HCC2218']
+    depths = ['30x']
 
     # script settings
-    samtools = '/extdata6/Doyeon/anaconda3/bin/samtools'
+    samtools = '/home/lab/anaconda3/envs/Sukjun/bin/samtools'
     java = '/extdata6/Doyeon/anaconda3/envs/deep-purity/bin/java'
     picard = '/extdata6/Beomman/bins/picard/build/libs/picard.jar'
 
     # path settings
-    ori_bam_dir = '/extdata4/baeklab/minwoo/data/TCGA-HCC'
+    ori_bam_dir = '/extdata4/baeklab/minwoo/data/TCGA-HCC-DEPTH-NORM'
     jobs = []  # a list of the 'Job' class
     normal_contams = [2.5, 5, 7.5, 10, 20, 30, 40, 50, 60, 70, 80, 90, 95]
 
@@ -44,7 +44,7 @@ def main():
             # in-loop path settings
             tumor_bam_path = f'{ori_bam_dir}/{cell_line}/{cell_line}.TUMOR.{depth}.bam'
             norm_bam_path = f'{ori_bam_dir}/{cell_line}/{cell_line}.NORMAL.{depth}.bam'
-            mix_bam_dir = f'/extdata4/baeklab/minwoo/data/TCGA-HCC-MIX/{cell_line}/{depth}'
+            mix_bam_dir = f'/extdata4/baeklab/minwoo/data/TCGA-HCC-DEPTH-NORM-MIX/{cell_line}/{depth}'
             temp_dir = f'{mix_bam_dir}/temp'
             os.makedirs(temp_dir, exist_ok=True)
 
