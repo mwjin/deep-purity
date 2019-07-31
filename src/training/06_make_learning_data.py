@@ -3,7 +3,7 @@
 Make images by parsing tsv files of variant samples via SGE job scheduler
 
 * Prerequisite
-    1. Run preprocess/04_make_datasets.py
+    1. Run 05_sample_variants.py
 """
 from lab.job import Job, qsub_sge
 from lab.utils import time_stamp
@@ -22,8 +22,8 @@ def main():
     # job scheduler settings
     queue = '24_730.q'
     is_test = True
-    prev_job_prefix = 'Minu.Var.Sampling'
-    job_name_prefix = 'Minu.Make.Var.Image'
+    prev_job_prefix = 'Minu.DeepPurity.Variant.Sampling'
+    job_name_prefix = 'Minu.DeepPurity.Make.Learning.Data'
     log_dir = f'{PROJECT_DIR}/log/{job_name_prefix}/{time_stamp()}'
 
     # path settings
@@ -34,7 +34,7 @@ def main():
     # param settings
     hist_width = 1000
     hist_height = 100
-    mode = 1  # 0: images of variants (from 03_mutect_out_summary.py), 1: images of variant samples (from 04_make_datasets.py)
+    mode = 1  # 0: images of variants (from 03_summarize_mto.py), 1: images of variant samples (from 05_sample_variants.py)
 
     # for mode 1
     m = 1000  # No. randomly sampled variants
@@ -56,7 +56,7 @@ def main():
                 image_set_path = f'{image_set_dir}/{cell_line}_{depth}.txt'
                 image_paths = []
 
-                var_tsv_dir = f'{PROJECT_DIR}/results/mto-summary/{cell_line}/{depth}'  # a result of 03_mutect_out_summary.py
+                var_tsv_dir = f'{PROJECT_DIR}/results/mto-summary/{cell_line}/{depth}'  # a result of 03_summarize_mto.py
                 out_image_dir = f'{PROJECT_DIR}/results/variant-images/{cell_line}/{depth}'
                 os.makedirs(out_image_dir, exist_ok=True)
 

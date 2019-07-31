@@ -5,7 +5,7 @@ Then, store essential information of the variants as TSV file.
 The TSV files will be used as data sets for learning
 
 * Prerequisite
-    1. Run 03_mutect_out_summary.py
+    1. Run 03_summarize_mto.py
 """
 from lab.job import Job, qsub_sge
 from lab.utils import time_stamp, eprint
@@ -27,63 +27,69 @@ def main():
     queue = '24_730.q'
     is_test = True
 
-    prev_job_prefix = 'Minu.Mutect.Out.Summary'
-    job_name_prefix = 'Minu.DeepPurity.Make.Learning.Datasets'
+    prev_job_prefix = 'Minu.DeepPurity.Classify.Variants'
+    job_name_prefix = 'Minu.DeepPurity.Variant.Sampling'
     log_dir = f'{PROJECT_DIR}/log/{job_name_prefix}/{time_stamp()}'
 
+    # path settings
+    var_tsv_dir = f'{PROJECT_DIR}/data/variants-tsv'
+
     # param settings
-    m = 1000  # No. randomly sampled variants
-    num_iter = 1000  # No. attempts of sampling
+    num_rand_variant = 10000  # No. randomly sampled variants
+    num_sampling = 1000  # No. attempts of sampling
+
+    var_tsv_subdir_names = ['train-set', 'valid-set']
     cell_lines = ['HCC1143', 'HCC1954']
     depths = ['30x']
     norm_contams = [2.5, 5, 7.5, 10, 20, 30, 40, 50, 60, 70, 80, 90, 95]  # unit: percent
 
     jobs = []  # a list of the 'Job' class
 
-    for cell_line in cell_lines:
-        for depth in depths:
-            # path settings
-            var_tsv_dir = f'{PROJECT_DIR}/data/mto-summary-depth-norm/{cell_line}/{depth}'  # input
-            output_dir = f'{PROJECT_DIR}/data/learning-datasets/{cell_line}/{depth}'
+    for subdir_name in var_tsv_subdir_names:
+        for cell_line in cell_lines:
+            for depth in depths:
+                # path settings
+                in_var_tsv_dir = f'{var_tsv_dir}/{subdir_name}/{cell_line}/{depth}'
+                out_var_tsv_dir = f'{var_tsv_dir}/{subdir_name}-samples/{cell_line}/{depth}'
 
-            for norm_contam in norm_contams:
-                tumor_purity = 100 - norm_contam
-                purity_tag = f'n{int(norm_contam)}t{int(tumor_purity)}'
+                for norm_contam in norm_contams:
+                    tumor_purity = 100 - norm_contam
+                    purity_tag = f'n{int(norm_contam)}t{int(tumor_purity)}'
 
-                # in-loop path settings
-                in_var_tsv_path = f'{var_tsv_dir}/{cell_line}.{purity_tag}.{depth}.tsv'  # input
+                    # in-loop path settings
+                    in_var_tsv_path = f'{in_var_tsv_dir}/{cell_line}.{purity_tag}.{depth}.tsv'  # input
 
-                if not os.path.isfile(in_var_tsv_path):
-                    continue
+                    if not os.path.isfile(in_var_tsv_path):
+                        continue
 
-                out_dir = f'{output_dir}/{purity_tag}'
-                os.makedirs(out_dir, exist_ok=True)
+                    out_sample_dir = f'{out_var_tsv_dir}/{purity_tag}'
+                    os.makedirs(out_sample_dir, exist_ok=True)
 
-                cmd = ''
-                job_index = 1
-                job_cnt_one_cmd = 40
+                    cmd = ''
+                    job_index = 1
+                    job_cnt_one_cmd = 40
 
-                for i in range(num_iter):
-                    out_tsv_path = f'{out_dir}/rand_{m}_{i+1:04}.tsv'
-                    cmd += f'{script} make_rand_sample_var_file {out_tsv_path} {in_var_tsv_path} {m};'
+                    for i in range(num_sampling):
+                        out_tsv_path = f'{out_sample_dir}/rand_{num_rand_variant}_{i+1:04}.tsv'
+                        cmd += f'{script} write_variant_sample {out_tsv_path} {in_var_tsv_path} {num_rand_variant};'
 
-                    if i % job_cnt_one_cmd == job_cnt_one_cmd - 1:
-                        if is_test:
-                            print(cmd)
-                        else:
-                            prev_job_name = f'{prev_job_prefix}.{cell_line}.{depth}.{purity_tag}'
-                            one_job_name = f'{job_name_prefix}.{cell_line}.{depth}.{purity_tag}.{job_index}'
-                            one_job = Job(one_job_name, cmd, hold_jid=prev_job_name)
-                            jobs.append(one_job)
+                        if i % job_cnt_one_cmd == job_cnt_one_cmd - 1:
+                            if is_test:
+                                print(cmd)
+                            else:
+                                prev_job_name = f'{prev_job_prefix}.{cell_line}.{depth}.{purity_tag}'
+                                one_job_name = f'{job_name_prefix}.{cell_line}.{depth}.{purity_tag}.{job_index}'
+                                one_job = Job(one_job_name, cmd, hold_jid=prev_job_name)
+                                jobs.append(one_job)
 
-                        cmd = ''  # reset
-                        job_index += 1
+                            cmd = ''  # reset
+                            job_index += 1
 
     if not is_test:
         qsub_sge(jobs, queue, log_dir)
 
 
-def make_rand_sample_var_file(out_tsv_path, in_tsv_path, num_rand_var, num_top_lod_var=None):
+def write_variant_sample(out_tsv_path, in_tsv_path, num_rand_var, num_top_lod_var=None):
     """
     Parse the input TSV file and randomly sample variants.
     From the variant set, get variants with top LODt score and store essential information of the variants as TSV file.

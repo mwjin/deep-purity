@@ -17,6 +17,78 @@ import sys
 PROJECT_DIR = '/extdata4/baeklab/minwoo/projects/deep-purity'
 
 
+def main():
+    """
+    Bootstrap
+    """
+    # job scheduler settings
+    script = os.path.abspath(__file__)
+    queue = '24_730.q'
+    is_test = True
+
+    prev_job_prefix = 'Minu.Mutect.Variant.Call'
+    job_name_prefix = 'Minu.Summarize.Mutect.Output'
+    log_dir = f'{PROJECT_DIR}/log/{job_name_prefix}/{time_stamp()}'
+
+    # param settings
+    cells = ['HCC1143', 'HCC1954', 'HCC1187', 'HCC2218']
+    depths = ['30x']
+
+    norm_contams = [2.5, 5, 7.5, 10, 20, 30, 40, 50, 60, 70, 80, 90, 95]  # unit: percent
+
+    jobs = []  # a list of the 'Job' class
+
+    for cell_line in cells:
+        for depth in depths:
+            # path settings
+            mto_dir = f'{PROJECT_DIR}/data/mutect-output-depth-norm/{cell_line}/{depth}'
+            mto_summary_dir = f'{PROJECT_DIR}/data/variants-tsv/original/{cell_line}/{depth}'
+            os.makedirs(mto_summary_dir, exist_ok=True)
+
+            for norm_contam in norm_contams:
+                tumor_purity = 100 - norm_contam
+                purity_tag = f'n{int(norm_contam)}t{int(tumor_purity)}'
+
+                # in-loop path settings
+                mto_path = f'{mto_dir}/{cell_line}.{purity_tag}.{depth}.mto'
+                output_path = f'{mto_summary_dir}/{cell_line}.{purity_tag}.{depth}.tsv'
+
+                cmd = f'{script} write_mto_summary {output_path} {mto_path}'
+
+                if is_test:
+                    print(cmd)
+                else:
+                    prev_job_name = f'{prev_job_prefix}.{cell_line}.{depth}.{purity_tag}'
+                    one_job_name = f'{job_name_prefix}.{cell_line}.{depth}.{purity_tag}'
+                    one_job = Job(one_job_name, cmd, hold_jid=prev_job_name)
+                    jobs.append(one_job)
+
+    if not is_test:
+        qsub_sge(jobs, queue, log_dir)
+
+
+def write_mto_summary(out_tsv_path, in_mto_path):
+    """
+    Parse a MTO file and write essential information of the passed variants as TSV file.
+
+    * Essential information: chrom, pos, ref, alt, LODt score, VAF
+
+    :param out_tsv_path: a path of an output (TSV)
+    :param in_mto_path: a path of a MTO input file
+    """
+    # parse mto
+    variants = _Variant.parse_mto_file(in_mto_path)
+    tsv_header = 'chrom\tpos\tref_allele\talt_allele\tlod_t_score\tvaf\t' \
+                 't_ref_count\tt_alt_count\tt_alt_freq\t' \
+                 'n_ref_count\tn_alt_count\tn_alt_freq\tjudgement'
+
+    with open(out_tsv_path, 'w') as out_tsv_file:
+        print(tsv_header, file=out_tsv_file)
+
+        for variant in variants:
+            print(variant, file=out_tsv_file)
+
+
 class _Variant:
     def __init__(self):
         self.chrom = '.'
@@ -89,78 +161,6 @@ class _Variant:
                     variants.append(variant)
 
         return variants
-
-
-def main():
-    """
-    Bootstrap
-    """
-    # job scheduler settings
-    script = os.path.abspath(__file__)
-    queue = '24_730.q'
-    is_test = True
-
-    prev_job_prefix = 'Minu.Mutect.Variant.Call'
-    job_name_prefix = 'Minu.Mutect.Out.Summary'
-    log_dir = f'{PROJECT_DIR}/log/{job_name_prefix}/{time_stamp()}'
-
-    # param settings
-    cells = ['HCC1143', 'HCC1954', 'HCC1187', 'HCC2218']
-    depths = ['30x']
-
-    norm_contams = [2.5, 5, 7.5, 10, 20, 30, 40, 50, 60, 70, 80, 90, 95]  # unit: percent
-
-    jobs = []  # a list of the 'Job' class
-
-    for cell_line in cells:
-        for depth in depths:
-            # path settings
-            mto_dir = f'{PROJECT_DIR}/data/mutect-output-depth-norm/{cell_line}/{depth}'
-            mto_summary_dir = f'{PROJECT_DIR}/data/mto-summary-depth-norm/{cell_line}/{depth}'
-            os.makedirs(mto_summary_dir, exist_ok=True)
-
-            for norm_contam in norm_contams:
-                tumor_purity = 100 - norm_contam
-                purity_tag = f'n{int(norm_contam)}t{int(tumor_purity)}'
-
-                # in-loop path settings
-                mto_path = f'{mto_dir}/{cell_line}.{purity_tag}.{depth}.mto'
-                output_path = f'{mto_summary_dir}/{cell_line}.{purity_tag}.{depth}.tsv'
-
-                cmd = f'{script} make_variant_summary {output_path} {mto_path}'
-
-                if is_test:
-                    print(cmd)
-                else:
-                    prev_job_name = f'{prev_job_prefix}.{cell_line}.{depth}.{purity_tag}'
-                    one_job_name = f'{job_name_prefix}.{cell_line}.{depth}.{purity_tag}'
-                    one_job = Job(one_job_name, cmd, hold_jid=prev_job_name)
-                    jobs.append(one_job)
-
-    if not is_test:
-        qsub_sge(jobs, queue, log_dir)
-
-
-def make_variant_summary(out_tsv_path, in_mto_path):
-    """
-    Parse a MTO file and write essential information of the passed variants as TSV file.
-
-    * Essential information: chrom, pos, ref, alt, LODt score, VAF
-
-    :param out_tsv_path: a path of an output (TSV)
-    :param in_mto_path: a path of a MTO input file
-    """
-    # parse mto
-    variants = _Variant.parse_mto_file(in_mto_path)
-    tsv_header = 'chrom\tpos\tref_allele\talt_allele\tlod_t_score\tvaf\t' \
-                 't_ref_count\tt_alt_count\tt_alt_freq\t' \
-                 'n_ref_count\tn_alt_count\tn_alt_freq\tjudgement'
-
-    with open(out_tsv_path, 'w') as out_tsv_file:
-        print(tsv_header, file=out_tsv_file)
-
-        for variant in variants:
-            print(variant, file=out_tsv_file)
 
 
 if __name__ == '__main__':
