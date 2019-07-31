@@ -1,3 +1,4 @@
+#!/extdata6/Doyeon/anaconda3/envs/deep-purity/bin/python3.6
 """
 Make a summary for a prediction result
 In the summary file,
@@ -21,7 +22,7 @@ with open(pred_result_path, 'r') as pred_result_file:
         tumor_purity = round(float(cols[1]), 3)
         pred_tumor_purity = round(float(cols[2]), 3)
 
-        if not tumor_purity in purity_to_preds:
+        if tumor_purity not in purity_to_preds:
             purity_to_preds[tumor_purity] = []
 
         purity_to_preds[tumor_purity].append(pred_tumor_purity)
