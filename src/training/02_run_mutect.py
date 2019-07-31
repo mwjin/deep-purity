@@ -1,10 +1,9 @@
 #!/extdata6/Doyeon/anaconda3/envs/deep-purity/bin/python3.6
 """
 Execute Mutect (Cibulskis et al., 2013, Nat. Biotech.) to call the variants from our normal contaminated bam files.
-Called variants are going to be used to make images for our CNN.
 
 * Prerequisite
-    1. Run 01_bam_mixer.py
+    1. Run 01_in_silico_contam.py
 """
 
 from lab.job import Job, qsub_sge
@@ -24,12 +23,12 @@ def main():
     # job scheduler settings
     queue = '24_730.q'
     is_test = True
-    prev_job_prefix = 'Minu.In.Silico.Bam.Mix'
-    job_name_prefix = 'Minu.Mutect'
+    prev_job_prefix = 'Minu.In.Silico.Normal.Contam'
+    job_name_prefix = 'Minu.Mutect.Variant.Call'
     log_dir = f'{PROJECT_DIR}/log/{job_name_prefix}/{time_stamp()}'
 
     # param settings
-    cell_line = 'HCC2218'
+    cell_line = 'HCC1143'
     depth = '30x'
 
     # path settings
@@ -67,8 +66,7 @@ def main():
     dbsnp_path = dbsnp_dict[cell_line]
 
     jobs = []  # a list of the 'Job' class
-    # norm_contam_pcts = [2.5, 5, 7.5, 10, 20, 30, 40, 50, 60, 70, 80, 90, 95]
-    norm_contam_pcts = [40, 50, 5, 80, 95]
+    norm_contam_pcts = [2.5, 5, 7.5, 10, 20, 30, 40, 50, 60, 70, 80, 90, 95]
 
     for norm_pct in norm_contam_pcts:
         tumor_pct = 100 - norm_pct

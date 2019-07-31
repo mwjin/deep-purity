@@ -4,7 +4,7 @@ From MTO file, randomly sample M variants and get top N LODt score variants.
 Then, store essential information of the variants as TSV file.
 
 * Prerequisite
-    1. Run 03_mto_summary.py
+    1. Run 03_mutect_out_summary.py
 """
 from lab.job import Job, qsub_sge
 from lab.utils import time_stamp, eprint
@@ -71,7 +71,7 @@ def main():
     m = 1000  # No. randomly sampled variants
     n = 1000
     num_iter = 1000  # No. attempts of sampling
-    cell_lines = ['HCC1143', 'HCC1954']
+    cell_lines = ['HCC1143', 'HCC1954', 'HCC1187', 'HCC2218']
     depths = ['30x']
     norm_contams = [2.5, 5, 7.5, 10, 20, 30, 40, 50, 60, 70, 80, 90, 95]  # unit: percent
 

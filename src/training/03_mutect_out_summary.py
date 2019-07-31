@@ -1,9 +1,10 @@
 #!/extdata6/Doyeon/anaconda3/envs/deep-purity/bin/python3.6
 """
-From MTO file, extract and store essential information of the passed variants as TSV file (Variant summary file).
+From MTO (Mutect output) file, extract and store essential information of the passed variants as TSV file.
+This is for reducing memory overhead.
 
 * Prerequisite
-    1. Run 02_exe_mutect.py
+    1. Run 02_run_mutect.py
 """
 from lab.job import Job, qsub_sge
 from lab.utils import time_stamp
@@ -99,12 +100,12 @@ def main():
     queue = '24_730.q'
     is_test = True
 
-    prev_job_prefix = 'Minu.Mutect'
+    prev_job_prefix = 'Minu.Mutect.Variant.Call'
     job_name_prefix = 'Minu.Mutect.Out.Summary'
     log_dir = f'{PROJECT_DIR}/log/{job_name_prefix}/{time_stamp()}'
 
     # param settings
-    cells = ['HCC1143', 'HCC1954']
+    cells = ['HCC1143', 'HCC1954', 'HCC1187', 'HCC2218']
     depths = ['30x']
 
     norm_contams = [2.5, 5, 7.5, 10, 20, 30, 40, 50, 60, 70, 80, 90, 95]  # unit: percent

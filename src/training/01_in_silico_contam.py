@@ -22,11 +22,11 @@ def main():
     # job scheduler settings
     queue = '24_730.q'
     is_test = True
-    job_name_prefix = 'Minu.In.Silico.Bam.Mix'
+    job_name_prefix = 'Minu.In.Silico.Normal.Contam'
     log_dir = f'{PROJECT_DIR}/log/{job_name_prefix}/{time_stamp()}'
 
     # param settings
-    cell_lines = ['HCC1187', 'HCC2218']
+    cell_lines = ['HCC1143', 'HCC1954', 'HCC1187', 'HCC2218']
     depths = ['30x']
 
     # script settings
