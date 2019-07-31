@@ -34,14 +34,11 @@ def main():
     # path settings
     # input
     in_bam_dir = f'/extdata4/baeklab/minwoo/data/TCGA-HCC-DEPTH-NORM-MIX/{cell_line}/{depth}'
-    in_bam_path_format = f'{in_bam_dir}/{cell_line}.%s.{depth}.bam'
     norm_bam_path = f'/extdata4/baeklab/minwoo/data/TCGA-HCC-DEPTH-NORM/' \
                     f'{cell_line}/{cell_line}.NORMAL.{depth}.bam'  # ctrl
 
     # output
-    out_dir = f'{PROJECT_DIR}/results/mutect-output-depth-norm/{cell_line}/{depth}'
-    out_vcf_path_format = f'{out_dir}/{cell_line}.%s.{depth}.vcf'
-    out_mto_path_format = f'{out_dir}/{cell_line}.%s.{depth}.mto'
+    out_dir = f'{PROJECT_DIR}/data/mutect-output-depth-norm/{cell_line}/{depth}'
     os.makedirs(out_dir, exist_ok=True)
 
     ref_genome_dict = {
@@ -66,16 +63,16 @@ def main():
     dbsnp_path = dbsnp_dict[cell_line]
 
     jobs = []  # a list of the 'Job' class
-    norm_contam_pcts = [2.5, 5, 7.5, 10, 20, 30, 40, 50, 60, 70, 80, 90, 95]
+    norm_contams = [2.5, 5, 7.5, 10, 20, 30, 40, 50, 60, 70, 80, 90, 95]
 
-    for norm_pct in norm_contam_pcts:
-        tumor_pct = 100 - norm_pct
-        tag = f'n{int(norm_pct)}t{int(tumor_pct)}'
+    for norm_contam in norm_contams:
+        tumor_purity = 100 - norm_contam
+        purity_tag = f'n{int(norm_contam)}t{int(tumor_purity)}'
 
         # in-loop path settings
-        in_bam_path = in_bam_path_format % tag
-        out_vcf_path = out_vcf_path_format % tag
-        out_mto_path = out_mto_path_format % tag
+        in_bam_path = f'{in_bam_dir}/{cell_line}.{purity_tag}.{depth}.bam'
+        out_vcf_path = f'{out_dir}/{cell_line}.{purity_tag}.{depth}.vcf'
+        out_mto_path = f'{out_dir}/{cell_line}.{purity_tag}.{depth}.mto'
 
         cmd = f'{java} -Xmx2g -Djava.io.tmpdir={temp_dir} -jar {mutect} -rf BadCigar --analysis_type MuTect ' \
               f'--reference_sequence {ref_genome} --dbsnp {dbsnp_path} ' \
@@ -86,8 +83,8 @@ def main():
         if is_test:
             print(cmd)
         else:
-            prev_job_name = f'{prev_job_prefix}.{cell_line}.{depth}.{tag}'
-            one_job_name = f'{job_name_prefix}.{cell_line}.{depth}.{tag}'
+            prev_job_name = f'{prev_job_prefix}.{cell_line}.{depth}.{purity_tag}'
+            one_job_name = f'{job_name_prefix}.{cell_line}.{depth}.{purity_tag}'
             one_job = Job(one_job_name, cmd, hold_jid=prev_job_name)
             jobs.append(one_job)
 
@@ -105,4 +102,4 @@ if __name__ == '__main__':
         if function_name in locals().keys():
             locals()[function_name](*function_parameters)
         else:
-            sys.exit('ERROR: function_name=%s, parameters=%s' % (function_name, function_parameters))
+            sys.exit(f'[ERROR]: The function \"{function_name}\" is unavailable.')

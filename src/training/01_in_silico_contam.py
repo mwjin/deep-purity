@@ -29,23 +29,23 @@ def main():
     cell_lines = ['HCC1143', 'HCC1954', 'HCC1187', 'HCC2218']
     depths = ['30x']
 
-    # script settings
+    # script path settings
     samtools = '/home/lab/anaconda3/envs/Sukjun/bin/samtools'
     java = '/extdata6/Doyeon/anaconda3/envs/deep-purity/bin/java'
     picard = '/extdata6/Beomman/bins/picard/build/libs/picard.jar'
 
     # path settings
-    ori_bam_dir = '/extdata4/baeklab/minwoo/data/TCGA-HCC-DEPTH-NORM'
+    bam_dir = '/extdata4/baeklab/minwoo/data/TCGA-HCC-DEPTH-NORM'
     jobs = []  # a list of the 'Job' class
     normal_contams = [2.5, 5, 7.5, 10, 20, 30, 40, 50, 60, 70, 80, 90, 95]
 
     for cell_line in cell_lines:
         for depth in depths:
             # in-loop path settings
-            tumor_bam_path = f'{ori_bam_dir}/{cell_line}/{cell_line}.TUMOR.{depth}.bam'
-            norm_bam_path = f'{ori_bam_dir}/{cell_line}/{cell_line}.NORMAL.{depth}.bam'
-            mix_bam_dir = f'/extdata4/baeklab/minwoo/data/TCGA-HCC-DEPTH-NORM-MIX/{cell_line}/{depth}'
-            temp_dir = f'{mix_bam_dir}/temp'
+            tumor_bam_path = f'{bam_dir}/{cell_line}/{cell_line}.TUMOR.{depth}.bam'
+            norm_bam_path = f'{bam_dir}/{cell_line}/{cell_line}.NORMAL.{depth}.bam'
+            out_bam_dir = f'/extdata4/baeklab/minwoo/data/TCGA-HCC-DEPTH-NORM-MIX/{cell_line}/{depth}'
+            temp_dir = f'{out_bam_dir}/temp'
             os.makedirs(temp_dir, exist_ok=True)
 
             for contam in normal_contams:
@@ -55,7 +55,7 @@ def main():
 
                 # in-loop path settings
                 purity_tag = f'n{int(contam)}t{int(purity)}'
-                mix_bam_path = f'{mix_bam_dir}/{cell_line}.{purity_tag}.{depth}.bam'
+                out_bam_path = f'{out_bam_dir}/{cell_line}.{purity_tag}.{depth}.bam'
 
                 tumor_temp_bam_path = f'{temp_dir}/{os.path.basename(tumor_bam_path)}'
                 tumor_temp_bam_path = tumor_temp_bam_path.replace('.bam', '.%d%%.bam' % purity)
@@ -65,8 +65,8 @@ def main():
                 cmd = f'{samtools} view -b -s {(SEED + tumor_ratio):.3f} {tumor_bam_path} > {tumor_temp_bam_path};' \
                       f'{samtools} view -b -s {(SEED + norm_ratio):.3f} {norm_bam_path} > {norm_temp_bam_path};' \
                       f'{java} -jar {picard} MergeSamFiles I={tumor_temp_bam_path} I={norm_temp_bam_path} ' \
-                      f'O={mix_bam_path};' \
-                      f'{samtools} index {mix_bam_path};'
+                      f'O={out_bam_path};' \
+                      f'{samtools} index {out_bam_path};'
 
                 if is_test:
                     print(cmd)
@@ -81,7 +81,7 @@ def main():
             if is_test:
                 print(temp_rm_cmd)
             else:
-                rm_job_name = f'{job_name_prefix}.{cell_line}.{depth}.Remove.Temp'
+                rm_job_name = f'{job_name_prefix}.{cell_line}.{depth}.Remove.Temp.Dir'
                 prev_job_name = f'{job_name_prefix}.{cell_line}.{depth}.*'
                 rm_job = Job(rm_job_name, temp_rm_cmd, hold_jid=prev_job_name)
                 jobs.append(rm_job)
@@ -100,4 +100,4 @@ if __name__ == '__main__':
         if function_name in locals().keys():
             locals()[function_name](*function_parameters)
         else:
-            sys.exit('ERROR: function_name=%s, parameters=%s' % (function_name, function_parameters))
+            sys.exit(f'[ERROR]: The function \"{function_name}\" is unavailable.')

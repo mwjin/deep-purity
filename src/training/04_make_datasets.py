@@ -2,6 +2,7 @@
 """
 From MTO file, randomly sample M variants and get top N LODt score variants.
 Then, store essential information of the variants as TSV file.
+The TSV files will be used as data sets for learning
 
 * Prerequisite
     1. Run 03_mutect_out_summary.py
@@ -17,43 +18,6 @@ import sys
 PROJECT_DIR = '/extdata4/baeklab/minwoo/projects/deep-purity'
 
 
-class _Variant:
-    def __init__(self):
-        self.chrom = '.'
-        self.pos = 0
-        self.ref = '.'
-        self.alt = '.'
-        self.lodt = 0.0
-        self.vaf = 0.0
-
-    def __str__(self):
-        return f'{self.chrom}\t{self.pos}\t{self.ref}\t{self.alt}\t{self.lodt}\t{self.vaf}'
-
-    def parse_tsv_entry(self, tsv_entry):
-        # TSV cols: chrom, pos, ref, alt, LODt score, VAF
-        tsv_fields = tsv_entry.strip().split('\t')
-        self.chrom = tsv_fields[0]
-        self.pos = int(tsv_fields[1])
-        self.ref = tsv_fields[2]
-        self.alt = tsv_fields[3]
-        self.lodt = float(tsv_fields[4])
-        self.vaf = float(tsv_fields[5])
-
-    @staticmethod
-    def parse_tsv_file(tsv_file_path):
-        variants = []
-
-        with open(tsv_file_path, 'r') as tsv_file:
-            tsv_file.readline()  # remove a header
-
-            for tsv_entry in tsv_file:
-                variant = _Variant()
-                variant.parse_tsv_entry(tsv_entry)
-                variants.append(variant)
-
-        return variants
-
-
 def main():
     """
     Bootstrap
@@ -64,14 +28,13 @@ def main():
     is_test = True
 
     prev_job_prefix = 'Minu.Mutect.Out.Summary'
-    job_name_prefix = 'Minu.Var.Sampling'
+    job_name_prefix = 'Minu.DeepPurity.Make.Learning.Datasets'
     log_dir = f'{PROJECT_DIR}/log/{job_name_prefix}/{time_stamp()}'
 
     # param settings
     m = 1000  # No. randomly sampled variants
-    n = 1000
     num_iter = 1000  # No. attempts of sampling
-    cell_lines = ['HCC1143', 'HCC1954', 'HCC1187', 'HCC2218']
+    cell_lines = ['HCC1143', 'HCC1954']
     depths = ['30x']
     norm_contams = [2.5, 5, 7.5, 10, 20, 30, 40, 50, 60, 70, 80, 90, 95]  # unit: percent
 
@@ -80,20 +43,20 @@ def main():
     for cell_line in cell_lines:
         for depth in depths:
             # path settings
-            ori_var_tsv_dir = f'{PROJECT_DIR}/results/variant-data-set-ks/valid/{cell_line}/{depth}'
-            var_sample_dir = f'{PROJECT_DIR}/results/variant-data-set-samples/ks/valid/{cell_line}/{depth}'
+            var_tsv_dir = f'{PROJECT_DIR}/data/mto-summary-depth-norm/{cell_line}/{depth}'  # input
+            output_dir = f'{PROJECT_DIR}/data/learning-datasets/{cell_line}/{depth}'
 
             for norm_contam in norm_contams:
                 tumor_purity = 100 - norm_contam
                 purity_tag = f'n{int(norm_contam)}t{int(tumor_purity)}'
 
                 # in-loop path settings
-                ori_var_tsv_path = f'{ori_var_tsv_dir}/{cell_line}.{purity_tag}.{depth}.tsv'  # input
+                in_var_tsv_path = f'{var_tsv_dir}/{cell_line}.{purity_tag}.{depth}.tsv'  # input
 
-                if not os.path.isfile(ori_var_tsv_path):
+                if not os.path.isfile(in_var_tsv_path):
                     continue
 
-                out_dir = f'{var_sample_dir}/{purity_tag}'
+                out_dir = f'{output_dir}/{purity_tag}'
                 os.makedirs(out_dir, exist_ok=True)
 
                 cmd = ''
@@ -102,7 +65,7 @@ def main():
 
                 for i in range(num_iter):
                     out_tsv_path = f'{out_dir}/rand_{m}_{i+1:04}.tsv'
-                    cmd += f'{script} make_rand_sample_var_file {out_tsv_path} {ori_var_tsv_path} {m};'
+                    cmd += f'{script} make_rand_sample_var_file {out_tsv_path} {in_var_tsv_path} {m};'
 
                     if i % job_cnt_one_cmd == job_cnt_one_cmd - 1:
                         if is_test:
@@ -172,6 +135,43 @@ def make_rand_sample_var_file(out_tsv_path, in_tsv_path, num_rand_var, num_top_l
             print(random_variants[i], file=out_tsv_file)
 
 
+class _Variant:
+    def __init__(self):
+        self.chrom = '.'
+        self.pos = 0
+        self.ref = '.'
+        self.alt = '.'
+        self.lodt = 0.0
+        self.vaf = 0.0
+
+    def __str__(self):
+        return f'{self.chrom}\t{self.pos}\t{self.ref}\t{self.alt}\t{self.lodt}\t{self.vaf}'
+
+    def parse_tsv_entry(self, tsv_entry):
+        # TSV cols: chrom, pos, ref, alt, LODt score, VAF
+        tsv_fields = tsv_entry.strip().split('\t')
+        self.chrom = tsv_fields[0]
+        self.pos = int(tsv_fields[1])
+        self.ref = tsv_fields[2]
+        self.alt = tsv_fields[3]
+        self.lodt = float(tsv_fields[4])
+        self.vaf = float(tsv_fields[5])
+
+    @staticmethod
+    def parse_tsv_file(tsv_file_path):
+        variants = []
+
+        with open(tsv_file_path, 'r') as tsv_file:
+            tsv_file.readline()  # remove a header
+
+            for tsv_entry in tsv_file:
+                variant = _Variant()
+                variant.parse_tsv_entry(tsv_entry)
+                variants.append(variant)
+
+        return variants
+
+
 if __name__ == '__main__':
     if len(sys.argv) == 1:
         main()
@@ -182,4 +182,4 @@ if __name__ == '__main__':
         if function_name in locals().keys():
             locals()[function_name](*function_parameters)
         else:
-            sys.exit('ERROR: function_name=%s, parameters=%s' % (function_name, function_parameters))
+            sys.exit(f'[ERROR]: The function \"{function_name}\" is unavailable.')

@@ -149,4 +149,4 @@ if __name__ == '__main__':
         if function_name in locals().keys():
             locals()[function_name](*function_parameters)
         else:
-            sys.exit('ERROR: function_name=%s, parameters=%s' % (function_name, function_parameters))
+            sys.exit(f'[ERROR]: The function \"{function_name}\" is unavailable.')

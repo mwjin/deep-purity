@@ -115,10 +115,8 @@ def main():
     for cell_line in cells:
         for depth in depths:
             # path settings
-            mto_dir = f'{PROJECT_DIR}/results/mutect-output-depth-norm/{cell_line}/{depth}'
-            mto_path_format = f'{mto_dir}/{cell_line}.%s.{depth}.mto'
-            mto_summary_dir = f'{PROJECT_DIR}/results/mto-summary-depth-norm/{cell_line}/{depth}'
-            mto_summary_path_format = f'{mto_summary_dir}/{cell_line}.%s.{depth}.tsv'
+            mto_dir = f'{PROJECT_DIR}/data/mutect-output-depth-norm/{cell_line}/{depth}'
+            mto_summary_dir = f'{PROJECT_DIR}/data/mto-summary-depth-norm/{cell_line}/{depth}'
             os.makedirs(mto_summary_dir, exist_ok=True)
 
             for norm_contam in norm_contams:
@@ -126,10 +124,10 @@ def main():
                 purity_tag = f'n{int(norm_contam)}t{int(tumor_purity)}'
 
                 # in-loop path settings
-                mto_path = mto_path_format % purity_tag
-                out_tsv_path = mto_summary_path_format % purity_tag
+                mto_path = f'{mto_dir}/{cell_line}.{purity_tag}.{depth}.mto'
+                output_path = f'{mto_summary_dir}/{cell_line}.{purity_tag}.{depth}.tsv'
 
-                cmd = f'{script} make_variant_summary {out_tsv_path} {mto_path}'
+                cmd = f'{script} make_variant_summary {output_path} {mto_path}'
 
                 if is_test:
                     print(cmd)
@@ -175,4 +173,4 @@ if __name__ == '__main__':
         if function_name in locals().keys():
             locals()[function_name](*function_parameters)
         else:
-            sys.exit('ERROR: function_name=%s, parameters=%s' % (function_name, function_parameters))
+            sys.exit(f'[ERROR]: The function \"{function_name}\" is unavailable.')
