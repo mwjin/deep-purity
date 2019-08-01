@@ -101,4 +101,4 @@ class _Variant:
 
 
 if __name__ == '__main__':
-    write_mto_summary(out_tsv_path=sys.argv[2], in_mto_path=sys.argv[1])
+    write_mto_summary(out_tsv_path=sys.argv[1], in_mto_path=sys.argv[2])
