@@ -87,7 +87,7 @@ def write_train_valid_variants(out_train_tsv_path, out_valid_tsv_path, in_var_ts
     valid_df = pd.DataFrame()
 
     for chrom in chroms:
-        chrom_variant_df = variant_df[(variant_df['chrom'] == str(chrom))]
+        chrom_variant_df = variant_df[(variant_df['contig'] == str(chrom))]
 
         if int(chrom) % 2 == 0:
             valid_df = valid_df.append(chrom_variant_df, ignore_index=True)
