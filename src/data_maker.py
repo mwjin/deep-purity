@@ -16,7 +16,7 @@ import sys
 # argument parsing
 out_data_path = sys.argv[1]
 var_tsv_path = sys.argv[2]
-tumor_purity = float(sys.argv[3]) if len(sys.argv) >= 3 else None  # used for training
+tumor_purity = float(sys.argv[3]) if len(sys.argv) >= 3 else None  # used for training and evaluation
 
 # params
 top_lodt_frac = 0.1

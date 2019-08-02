@@ -88,9 +88,9 @@ def main():
                             job_index += 1
 
         # make a list of vaf_hists made by this script for training and testing the model
-        with open(data_list_path, 'w') as vaf_hist_set_file:
+        with open(data_list_path, 'w') as data_list_file:
             for learn_data_path in learn_data_paths:
-                print(learn_data_path, file=vaf_hist_set_file)
+                print(learn_data_path, file=data_list_file)
 
     if not is_test:
         qsub_sge(jobs, queue, log_dir)
