@@ -2,7 +2,7 @@
 """
 Make, train, and test our deep learning model
 """
-import pickle
+import h5py
 import random
 import os
 import sys
@@ -30,7 +30,7 @@ def make_base_model(base_model_path):
     """
     # build a fully connected layer and an output layer
     vaf_hist_layer = Input(shape=(101,), name='vaf_hist_array')
-    # concat_cnn_output = concatenate([cnn_model_outputs[0], vaf_hist_layer])
+
     full_conn_layer = Dense(512, kernel_initializer='he_uniform', activation='relu',
                             kernel_regularizer=regularizers.l2(0.0))(vaf_hist_layer)
     full_conn_layer = Dense(512, kernel_initializer='he_uniform', activation='relu',
@@ -44,7 +44,8 @@ def make_base_model(base_model_path):
     model.save(base_model_path)
 
 
-def train_model(train_model_path, base_model_path, train_img_set_path, valid_img_set_path, draw_learning_curve=True):
+def train_model(train_model_path, base_model_path,
+                train_data_list_path, valid_data_list_path, draw_learning_curve=True):
     """
     Train our model
     """
@@ -52,15 +53,15 @@ def train_model(train_model_path, base_model_path, train_img_set_path, valid_img
     model = load_model(base_model_path)
 
     print('[LOG] Start training the model', time.ctime())
-    with open(train_img_set_path, 'r') as train_img_set_file:
-        train_image_paths = train_img_set_file.read().splitlines()
+    with open(train_data_list_path, 'r') as train_data_list_file:
+        train_data_paths = train_data_list_file.read().splitlines()
 
-    with open(valid_img_set_path, 'r') as valid_img_set_file:
-        valid_image_paths = valid_img_set_file.read().splitlines()
+    with open(valid_data_list_path, 'r') as valid_data_list_file:
+        valid_data_paths = valid_data_list_file.read().splitlines()
 
     # down-sample the images to reduce training time consuming
-    train_image_paths = random.sample(train_image_paths, int(len(train_image_paths) * 0.6))
-    valid_image_paths = random.sample(valid_image_paths, int(len(valid_image_paths) * 0.4))
+    train_data_paths = random.sample(train_data_paths, int(len(train_data_paths) * 0.6))
+    valid_data_paths = random.sample(valid_data_paths, int(len(valid_data_paths) * 0.4))
 
     params = {
         'batch_size': BATCH_SIZE,
@@ -69,8 +70,8 @@ def train_model(train_model_path, base_model_path, train_img_set_path, valid_img
         'shuffle': True
     }
 
-    train_data_generator = DataGenerator(train_image_paths, **params)
-    valid_data_generator = DataGenerator(valid_image_paths, **params)
+    train_data_generator = DataGenerator(train_data_paths, **params)
+    valid_data_generator = DataGenerator(valid_data_paths, **params)
 
     # train the model
     model_ckpt = ModelCheckpoint(train_model_path, monitor='val_loss', save_best_only=True, mode='min')
@@ -94,33 +95,36 @@ def train_model(train_model_path, base_model_path, train_img_set_path, valid_img
     print('[LOG] Training is terminated.', time.ctime())
 
 
-def test_model(predict_result_path, train_model_path, test_img_set_path):
+def test_model(test_result_path, train_model_path, test_data_list_path):
     """
-    Test our trained model by predicting numerical values corresponding to each image
+    Test the trained model by predicting purities for each each data
     """
     print('[LOG] Load the trained model', time.ctime())
     model = load_model(train_model_path)
 
-    print('[LOG] Start prediction', time.ctime())
-    with open(test_img_set_path, 'r') as test_img_set_file:
-        test_image_paths = test_img_set_file.read().splitlines()
+    print('[LOG] Start purity prediction', time.ctime())
+    with open(test_data_list_path, 'r') as test_data_list_file:
+        test_data_paths = test_data_list_file.read().splitlines()
 
-    batch_size = 1
     params = {
-        'batch_size': batch_size,
+        'batch_size': 1,
         'num_labels': 1,
         'num_channels': 9,
         'shuffle': False
     }
-    test_data_generator = DataGenerator(test_image_paths, **params)
-    predict_values = model.predict_generator(test_data_generator)
-    real_values = [pickle.load(open(image_path, 'rb'))['tumor_purity'] for image_path in test_image_paths]
+    test_data_generator = DataGenerator(test_data_paths, **params)
+    predicted_values = model.predict_generator(test_data_generator)
+    actual_values = []
 
-    with open(predict_result_path, 'w') as pred_out_file:
-        for image_path, real_value, predict_value in zip(test_image_paths, real_values, predict_values):
-            print(*[image_path, real_value, *predict_value], sep='\t', file=pred_out_file)
+    for test_data_path in test_data_paths:
+        with h5py.File(test_data_path, 'r') as test_data:
+            actual_values.append(test_data['tumor_purity'].value)
 
-    print('[LOG] Prediction is terminated.', time.ctime())
+    with open(test_result_path, 'w') as outfile:
+        for test_data_path, actual_value, predicted_value in zip(test_data_paths, actual_values, predicted_values):
+            print(*[test_data_path, actual_value, *predicted_value], sep='\t', file=outfile)
+
+    print('[LOG] Testing is terminated.', time.ctime())
 
 
 def see_model_weights(model_path):
