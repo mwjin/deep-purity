@@ -34,8 +34,7 @@ def main():
     os.makedirs(data_list_dir, exist_ok=True)
 
     # param settings
-    m = 10000  # No. randomly sampled variants
-    num_iter = 1000  # No. attempts of sampling
+    num_files = 1000  # No. attempts of sampling
 
     data_classes = ['train-set', 'valid-set']
     cell_lines = ['HCC1143', 'HCC1954']
@@ -68,9 +67,9 @@ def main():
                     job_index = 1
                     job_cnt_one_cmd = 8  # it must be a divisor of {num_iter}.
 
-                    for i in range(num_iter):
-                        in_tsv_path = f'{var_sample_dir}/rand_{m}_{i+1:04}.tsv'
-                        out_vaf_hist_path = f'{output_dir}/rand_{m}_{i+1:04}.hdf5'
+                    for i in range(num_files):
+                        in_tsv_path = f'{var_sample_dir}/random_variants_{i+1:04}.tsv'
+                        out_vaf_hist_path = f'{output_dir}/random_variants_{i+1:04}.hdf5'
                         learn_data_paths.append(out_vaf_hist_path)
                         cmd += f'{data_maker_script} {out_vaf_hist_path} {in_tsv_path} {tumor_purity_ratio};'
 
