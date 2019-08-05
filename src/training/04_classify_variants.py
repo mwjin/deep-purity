@@ -80,20 +80,9 @@ def write_train_valid_variants(out_train_tsv_path, out_valid_tsv_path, in_var_ts
     Training set: chromosome 1, 3, 5, ..., 21
     Test set: chromosome 2, 4, 6, ..., 22
     """
-    chroms = list(range(1, 23))
-
     variant_df = pd.read_table(in_var_tsv_path)
-    train_df = pd.DataFrame()
-    valid_df = pd.DataFrame()
-
-    for chrom in chroms:
-        chrom_variant_df = variant_df[(variant_df['contig'] == str(chrom))]
-
-        if int(chrom) % 2 == 0:
-            valid_df = valid_df.append(chrom_variant_df, ignore_index=True)
-        else:
-            train_df = train_df.append(chrom_variant_df, ignore_index=True)
-
+    train_df = variant_df[variant_df['contig'] % 2 == 1].reset_index(drop=True)
+    valid_df = variant_df[variant_df['contig'] % 2 == 0].reset_index(drop=True)
     train_df.to_csv(out_train_tsv_path, sep='\t', index=False)
     valid_df.to_csv(out_valid_tsv_path, sep='\t', index=False)
 
