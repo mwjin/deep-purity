@@ -6,6 +6,10 @@ This is for reducing memory overhead.
 import re
 import sys
 
+# params
+HETERO_THRESHOLD = 0.35  # If |VAF - 0.5| < HETERO_THRESHOLD, the position is heterozygous.
+DEPTH_THRESHOLD = 20
+
 
 def write_mto_summary(out_tsv_path, in_mto_path):
     """
@@ -81,7 +85,7 @@ class _Variant:
                 judge = cols[judge_idx]
                 fail_reason = cols[fail_reason_idx]
 
-                if regex_chr.match(chrom) and judge == 'KEEP':  # only somatic mutations
+                if regex_chr.match(chrom):
                     variant = _Variant()
                     variant.chrom = chrom
                     variant.pos = int(cols[pos_idx])
@@ -95,7 +99,21 @@ class _Variant:
                     variant.n_alt_count = int(cols[n_alt_count_idx])
                     variant.judge = judge
                     variant.fail_reason = fail_reason
-                    variants.append(variant)
+
+                    tumor_depth = variant.t_alt_count + variant.t_ref_count
+                    normal_depth = variant.n_alt_count + variant.n_ref_count
+
+                    # somatic mutations
+                    if judge == 'KEEP':
+                        variants.append(variant)
+                        continue
+
+                    # heterozygous locus in normal
+                    if (normal_depth >= DEPTH_THRESHOLD and tumor_depth >= DEPTH_THRESHOLD):
+                        normal_vaf = variant.n_alt_count / (variant.n_alt_count + variant.n_ref_count)
+
+                        if abs(normal_vaf - 0.5) < HETERO_THRESHOLD:
+                            variants.append(variant)
 
         return variants
 
