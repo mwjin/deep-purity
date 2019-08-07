@@ -1,11 +1,10 @@
 #!/extdata6/Doyeon/anaconda3/envs/deep-purity/bin/python3.6
 """
-From MTO file, randomly sample M variants and get top N LODt score variants.
-Then, store essential information of the variants as TSV file.
+From MTO file, randomly sample variants, then store essential information of the variants as TSV file.
 The TSV files will be used as data sets for learning
 
 * Prerequisite
-    1. Run 03_summarize_mto.py
+    1. Run 04_classify_variants.py
 """
 from lab.job import Job, qsub_sge
 from lab.utils import time_stamp, eprint
@@ -36,7 +35,7 @@ def main():
 
     # param settings
     num_rand_somatic = 10000  # No. randomly sampled somatic variants
-    num_rand_germline = 100000  # No. randomly sampled germline variants heterozygous in normal
+    num_rand_germline = 150000  # No. randomly sampled germline variants heterozygous in normal
     num_sampling = 1000  # No. attempts of sampling
 
     variant_classes = ['train-set', 'valid-set']
@@ -131,7 +130,7 @@ def write_variant_sample(out_tsv_path, in_tsv_path, num_rand_somatic, num_rand_g
     variant_df = pd.concat([somatic_variant_df.reset_index(drop=True),
                             germline_variant_df.reset_index(drop=True)],
                            axis=0)
-    variant_df = variant_df.sort_values(by='contig')
+    variant_df = variant_df.sort_values(by=['contig', 'position'])
     variant_df.to_csv(out_tsv_path, sep='\t', index=False)
 
 

@@ -22,15 +22,16 @@ def main():
     # job scheduler settings
     queue = '24_730.q'
     is_test = True
-    prev_job_prefix = 'Minu.DeepPurity.Variant.Sampling'
+    prev_job_prefix = 'Minu.DeepPurity.CHAT.Segmentation'
     job_name_prefix = 'Minu.DeepPurity.Make.Learning.Data'
     log_dir = f'{PROJECT_DIR}/log/{job_name_prefix}/{time_stamp()}'
 
     # path settings
     data_maker_script = f'{PROJECT_DIR}/src/data_maker.py'
     var_tsv_dir = f'{PROJECT_DIR}/data/variants-tsv'
+    seg_tsv_dir = f'{PROJECT_DIR}/data/segments-tsv'
     learn_data_dir = f'{PROJECT_DIR}/data/learning-data'
-    data_list_dir = f'{PROJECT_DIR}/data/learning-data-list'  # output
+    data_list_dir = f'{PROJECT_DIR}/data/learning-data-list'
     os.makedirs(data_list_dir, exist_ok=True)
 
     # param settings
@@ -56,10 +57,7 @@ def main():
 
                     # in-loop path settings
                     var_sample_dir = f'{var_tsv_dir}/{data_class}-samples/{cell_line}/{depth}/{purity_tag}'
-
-                    if not os.path.isdir(var_sample_dir):
-                        continue
-
+                    seg_sample_dir = f'{seg_tsv_dir}/{data_class}-samples/{cell_line}/{depth}/{purity_tag}'
                     output_dir = f'{learn_data_dir}/{data_class}/{cell_line}/{depth}/{purity_tag}'
                     os.makedirs(output_dir, exist_ok=True)
 
@@ -68,10 +66,12 @@ def main():
                     job_cnt_one_cmd = 8  # it must be a divisor of {num_iter}.
 
                     for i in range(num_files):
-                        in_tsv_path = f'{var_sample_dir}/random_variants_{i+1:04}.tsv'
-                        out_vaf_hist_path = f'{output_dir}/random_variants_{i+1:04}.hdf5'
-                        learn_data_paths.append(out_vaf_hist_path)
-                        cmd += f'{data_maker_script} {out_vaf_hist_path} {in_tsv_path} {tumor_purity_ratio};'
+                        in_var_tsv_path = f'{var_sample_dir}/random_variants_{i+1:04}.tsv'
+                        in_seg_tsv_path = f'{seg_sample_dir}/random_variants_{i+1:04}.tsv'
+                        output_path = f'{output_dir}/random_variants_{i+1:04}.hdf5'
+                        learn_data_paths.append(output_path)
+                        cmd += f'{data_maker_script} {output_path} {in_var_tsv_path} {in_seg_tsv_path} ' \
+                               f'{tumor_purity_ratio};'
 
                         if i % job_cnt_one_cmd == job_cnt_one_cmd - 1:
                             if is_test:
