@@ -46,7 +46,7 @@ vaf_lrr_image = np.zeros((401, 501))
 
 for _, segment in segment_df.iterrows():
     folded_vaf = segment['folded_VAF']
-    log2_lrr = segment_df['log2-LRR']
+    log2_lrr = segment['log2-LRR']
     row_idx = int(round(log2_lrr, 2) * 100) + 200
     col_idx = int(round(folded_vaf, 3) * 1000)
 
