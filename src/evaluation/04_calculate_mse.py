@@ -3,13 +3,13 @@
 Evaluate the results of prediction by calculating the mean squared error (MSE) for each cell line
 
 * Prerequisite
-    1. Run 02_test_model.py
+    1. Run 03_test_model.py
 """
 
 
 def main():
     # param settings
-    cell_lines = ['HCC1143', 'HCC1954']
+    cell_lines = ['HCC1143', 'HCC1954', 'HCC1187', 'HCC2218']
     depth = '30x'
     tumor_purities = [5, 10, 20, 30, 40, 50, 60, 70, 80, 90, 95]  # unit: percent
 
