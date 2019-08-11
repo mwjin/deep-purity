@@ -4,6 +4,7 @@ Make images by parsing tsv files of variant samples via SGE job scheduler
 
 * Prerequisite
     1. Run 05_sample_variants.py
+    2. Run 06_segment_samples.py
 """
 from lab.job import Job, qsub_sge
 from lab.utils import time_stamp
@@ -63,7 +64,7 @@ def main():
 
                     cmd = ''
                     job_index = 1
-                    job_cnt_one_cmd = 8  # it must be a divisor of {num_iter}.
+                    job_cnt_one_cmd = 100  # it must be a divisor of {num_iter}.
 
                     for i in range(num_files):
                         in_var_tsv_path = f'{var_sample_dir}/random_variants_{i+1:04}.tsv'
@@ -77,7 +78,7 @@ def main():
                             if is_test:
                                 print(cmd)
                             else:
-                                prev_job_name = f'{prev_job_prefix}.{data_class}.{cell_line}.{depth}.{purity_tag}'
+                                prev_job_name = f'{prev_job_prefix}.*'
                                 one_job_name = f'{job_name_prefix}.{data_class}.{cell_line}.{depth}.{purity_tag}.' \
                                                f'Random.{job_index}'
                                 one_job = Job(one_job_name, cmd, hold_jid=prev_job_name)
