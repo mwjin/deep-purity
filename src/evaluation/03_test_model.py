@@ -23,7 +23,7 @@ def main():
     os.makedirs(result_dir, exist_ok=True)
 
     model_dir = f'{project_dir}/model'
-    train_model_path = f'{model_dir}/train_model_prev.hdf5'
+    train_model_path = f'{model_dir}/train_model_190809.hdf5'
 
     if not os.path.isfile(train_model_path):
         sys.exit(f'[ERROR] The base model \'{train_model_path}\' does not exist. '

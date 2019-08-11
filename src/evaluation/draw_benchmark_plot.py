@@ -21,7 +21,7 @@ def make_benchmark_plot():
     purity_to_predictions = dict()
     
     # for absolute
-    abs_summary_path = f'/extdata4/baeklab/minwoo/projects/absolute/results/absolute/' \
+    abs_summary_path = f'/extdata4/baeklab/minwoo/projects/absolute/results/absolute-depth-norm/' \
                        f'{cell_line}/{depth}/purity_summary.txt'
 
     with open(abs_summary_path, 'r') as abs_file:
@@ -83,7 +83,7 @@ def make_benchmark_plot():
 
     # for plotting
     out_dir = '/extdata4/baeklab/minwoo/projects/deep-purity/results/benchmark'
-    png_outfile = f'{out_dir}/190612_{model_ver}_{cell_line}_{top_lodt_num}_junhak-chat-seg.png'
+    png_outfile = f'{out_dir}/190809_{cell_line}_{depth}_benchmark.png'
     os.makedirs(out_dir, exist_ok=True)
 
     plt.figure(figsize=(9, 7))

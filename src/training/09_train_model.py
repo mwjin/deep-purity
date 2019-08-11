@@ -17,13 +17,13 @@ def main():
     train_data_list_path = f'{data_list_dir}/train_set_data_paths.txt'
     valid_data_list_path = f'{data_list_dir}/valid_set_data_paths.txt'
 
-    if not os.path.isfile(train_data_list_path) or os.path.isfile(valid_data_list_path):
+    if not os.path.isfile(train_data_list_path) or not os.path.isfile(valid_data_list_path):
         sys.exit(f'[ERROR] The files for lists of learning data does not exist. '
                  f'Check the paths or run 07_make_learning_data.py')
 
     model_dir = f'{project_dir}/model'
-    base_model_path = f'{model_dir}/base_model_190801.hdf5'
-    train_model_path = f'{model_dir}/train_model_190801.hdf5'
+    base_model_path = f'{model_dir}/base_model_190809.hdf5'
+    train_model_path = f'{model_dir}/train_model_190809.hdf5'
 
     if not os.path.isfile(base_model_path):
         sys.exit(f'[ERROR] The base model \'{base_model_path}\' does not exist. '
