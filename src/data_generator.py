@@ -49,12 +49,12 @@ class DataGenerator(keras.utils.Sequence):
         generates data containing batch_size samples
         you should modify this function to fit in your data
         """
-        # data_keys = ['var_allele_image', 'vaf_hist_image']
-        data_keys = ['vaf_hist_array']
+        data_keys = ['vaf_hist_array', 'vaf_lrr_image']
         label_key = 'tumor_purity'
 
         batch_data_dict = {
-            'vaf_hist_array': np.empty((self.batch_size, 101))
+            'vaf_hist_array': np.empty((self.batch_size, 101)),
+            'vaf_lrr_image': np.empty((self.batch_size, 401, 501, 1))
         }
         batch_labels = np.empty((self.batch_size, self.num_labels), dtype=float)
 

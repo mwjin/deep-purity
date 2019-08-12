@@ -55,6 +55,8 @@ for _, segment in segment_df.iterrows():
 
     vaf_lrr_image[row_idx, col_idx] = 1.0
 
+vaf_lrr_image =  vaf_lrr_image[:, :, np.newaxis]  # expand the dimension
+
 # store the vaf histogram
 with h5py.File(out_data_path, 'w') as outfile:
     outfile.create_dataset('vaf_hist_array', data=vaf_hist)
