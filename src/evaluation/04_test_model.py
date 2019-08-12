@@ -3,7 +3,7 @@
 Test the trained model by predicting purities of the test data
 
 * Prerequisite
-    1. Run 02_make_test_data.py
+    1. Run 03_make_test_data.py
 """
 import os
 import sys
@@ -27,7 +27,7 @@ def main():
 
     if not os.path.isfile(train_model_path):
         sys.exit(f'[ERROR] The base model \'{train_model_path}\' does not exist. '
-                 f'Check the path or run training/09_train_model.py')
+                 f'Check the path or run training/10_train_model.py')
 
     brain_script = f'{project_dir}/src/brain.py'  # script for making our model
 
@@ -39,7 +39,7 @@ def main():
 
         if not os.path.isfile(test_data_list_path):
             sys.exit(f'[ERROR] The files for lists of learning data does not exist. '
-                     f'Check the paths or run 02_make_test_data.py')
+                     f'Check the paths or run 03_make_test_data.py')
 
         # Execution
         cmd = f'{brain_script} test_model {result_path} {train_model_path} {test_data_list_path};'

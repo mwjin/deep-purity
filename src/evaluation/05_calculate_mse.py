@@ -3,7 +3,7 @@
 Evaluate the results of prediction by calculating the mean squared error (MSE) for each cell line
 
 * Prerequisite
-    1. Run 03_test_model.py
+    1. Run 04_test_model.py
 """
 
 
