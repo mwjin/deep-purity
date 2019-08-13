@@ -29,8 +29,8 @@ def make_base_model(base_model_path):
     make our model
     """
     # build a CNN model for VAF-LRR plots
-    vaf_lrr_layer = Input(shape=(401, 501, 1), name='vaf_lrr_image')
-    vaf_lrr_cnn_model = _build_cnn_model(vaf_lrr_layer, input_shape=(401, 501, 1))
+    vaf_lrr_layer = Input(shape=(1000, 4, 1), name='vaf_lrr_image')
+    vaf_lrr_cnn_model = _build_cnn_model(vaf_lrr_layer, input_shape=(1000, 4, 1))
 
     # build a fully connected layer for VAF histograms of somatic mutations
     vaf_hist_layer = Input(shape=(101,), name='vaf_hist_array')

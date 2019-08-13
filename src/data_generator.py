@@ -54,7 +54,7 @@ class DataGenerator(keras.utils.Sequence):
 
         batch_data_dict = {
             'vaf_hist_array': np.empty((self.batch_size, 101)),
-            'vaf_lrr_image': np.empty((self.batch_size, 401, 501, 1))
+            'vaf_lrr_image': np.empty((self.batch_size, 1000, 4, 1))
         }
         batch_labels = np.empty((self.batch_size, self.num_labels), dtype=float)
 

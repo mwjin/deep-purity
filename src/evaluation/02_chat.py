@@ -25,7 +25,7 @@ def main():
     # path settings
     seg_tsv_dir = f'{PROJECT_DIR}/data/segments-tsv/original'
     chat_tsv_dir = f'{PROJECT_DIR}/data/chat-tsv/original'
-    chat_script = f'{PROJECT_DIR}/src/chat_mock.R'
+    chat_script = f'{PROJECT_DIR}/src/chat_mock.py'
 
     # path settings
     cell_lines = ['HCC1143', 'HCC1954', 'HCC1187', 'HCC2218']
