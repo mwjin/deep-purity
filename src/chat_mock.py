@@ -26,8 +26,8 @@ def main():
     origin, is_euploid = get_origin(segments)
     non_euploid_segments = segments[np.invert(is_euploid)]
     non_euploid_segments = segment_filter(non_euploid_segments, origin)
-    est_purity, min_square_dists = estimate_tumor_purity(non_euploid_segments, max_ploidy, npl, origin)
-    updated_segments = append_info_to_segments(non_euploid_segments, min_square_dists, est_purity)
+    min_square_dists, est_purities = get_min_square_dists(non_euploid_segments, max_ploidy, npl, origin)
+    updated_segments = append_info_to_segments(non_euploid_segments, min_square_dists, est_purities)
 
     print('[LOG] Write the result of the mocked CHAT')
     with open(output_path, 'w') as outfile:
@@ -131,25 +131,24 @@ def segment_filter(segments, origin):
     return np.array(filt_seg_points)
 
 
-def estimate_tumor_purity(segments, max_ploidy, npl, origin):
+def get_min_square_dists(segments, max_ploidy, npl, origin):
+    """
+    Return the min squared dists of all segments and their cognate estimated purities
+    """
+
     print('[LOG] ... Estimate the tumor purity using the segments')
     purities = np.arange(0.0, 1.01, 0.01)
-    min_purity = None
-    min_sum_dist = None
-    min_square_dists = None
+    min_square_dists = np.full(len(segments), 10000)
+    est_purities = np.full(len(segments), 10000)
     origin_x, origin_y = origin
 
-    for agp in purities:
-        canonical_lines = get_canonical_lines(origin_x, origin_y, max_ploidy, npl, agp)
+    for est_purity in purities:
+        canonical_lines = get_canonical_lines(origin_x, origin_y, max_ploidy, npl, est_purity)
         square_dists = get_square_dists(segments, canonical_lines)
-        square_dist_sum = sum(square_dists)
+        min_square_dists[square_dists < min_square_dists] = square_dists[square_dists < min_square_dists]
+        est_purities[square_dists < min_square_dists] = est_purity
 
-        if min_purity is None or min_sum_dist > square_dist_sum:
-            min_purity = agp
-            min_sum_dist = square_dist_sum
-            min_square_dists = square_dists
-
-    return min_purity, min_square_dists
+    return min_square_dists, est_purities
 
 
 def get_canonical_lines(x0, y0, max_ploidy, npl, purity=1.0):
@@ -210,7 +209,7 @@ def get_line_point_dist(x, y, x_coef, y_coef, intercept):
     return abs(x * x_coef + y * y_coef + intercept) / np.linalg.norm((x_coef, y_coef))
 
 
-def append_info_to_segments(segments, min_square_dists, est_purity):
+def append_info_to_segments(segments, min_square_dists, est_purities):
     """
     append (min_square_dist, est_purity) used to estimate the tumor purity to each segment
     """
@@ -219,6 +218,7 @@ def append_info_to_segments(segments, min_square_dists, est_purity):
     for i in range(len(segments)):
         segment = list(segments[i])
         min_square_dist = min_square_dists[i]
+        est_purity = est_purities[i]
         segment.append(min_square_dist)
         segment.append(est_purity)
         updated_segments.append(segment)
