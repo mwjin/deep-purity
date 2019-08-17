@@ -42,6 +42,7 @@ vaf_hist = vaf_hist / variant_cnt  # normalization
 print('[LOG] Make a folded VAF-log2 LRR image using segments')
 segment_df = pd.read_table(seg_tsv_path)
 segment_df = segment_df.dropna()
+segment_cnt = len(segment_df.index)
 vaf_lrr_image = np.zeros((401, 501))
 
 for _, segment in segment_df.iterrows():
@@ -53,8 +54,9 @@ for _, segment in segment_df.iterrows():
     if row_idx < 0 or row_idx > 400 or col_idx > 500:
         continue
 
-    vaf_lrr_image[row_idx, col_idx] = 1.0
+    vaf_lrr_image[row_idx, col_idx] += 1.0
 
+vaf_lrr_image = vaf_lrr_image / segment_cnt  # store their density
 vaf_lrr_image =  vaf_lrr_image[:, :, np.newaxis]  # expand the dimension
 
 # store the vaf histogram
