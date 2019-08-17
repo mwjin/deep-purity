@@ -182,6 +182,7 @@ def _draw_learning_curve(plot_path, plot_title, history):
     plt.title(plot_title)
     plt.ylabel('loss')
     plt.xlabel('epoch')
+    plt.ylim(0, 0.05)
     plt.legend(['train', 'validation'], loc='upper left')
     # plt.yscale('log')
     plt.savefig(plot_path)
