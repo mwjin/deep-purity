@@ -79,8 +79,8 @@ def main():
                                 print(cmd)
                             else:
                                 prev_job_name = f'{prev_job_prefix}.*'
-                                one_job_name = f'{job_name_prefix}.{data_class}.{cell_line}.{depth}.{purity_tag}.' \
-                                               f'Random.{job_index}'
+                                one_job_name = \
+                                    f'{job_name_prefix}.{cell_line}.{depth}.{purity_tag}.{data_class}.{job_index}'
                                 one_job = Job(one_job_name, cmd, hold_jid=prev_job_name)
                                 jobs.append(one_job)
 

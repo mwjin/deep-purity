@@ -69,8 +69,9 @@ def main():
                             if is_test:
                                 print(cmd)
                             else:
-                                prev_job_name = f'{prev_job_prefix}.{cell_line}.{depth}.{purity_tag}'
-                                one_job_name = f'{job_name_prefix}.{cell_line}.{depth}.{purity_tag}.{job_index}'
+                                prev_job_name = f'{prev_job_prefix}.{cell_line}.{depth}.{purity_tag}.{variant_class}.*'
+                                one_job_name = \
+                                    f'{job_name_prefix}.{cell_line}.{depth}.{purity_tag}.{variant_class}.{job_index}'
                                 one_job = Job(one_job_name, cmd, hold_jid=prev_job_name)
                                 jobs.append(one_job)
 
