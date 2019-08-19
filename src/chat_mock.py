@@ -28,12 +28,13 @@ def main():
     non_euploid_segments = segment_filter(non_euploid_segments, origin)
     min_square_dists, est_purities = get_min_square_dists(non_euploid_segments, max_ploidy, npl, origin)
     updated_segments = append_info_to_segments(non_euploid_segments, min_square_dists, est_purities)
+    normalized_segments = normalize_segments(updated_segments)
 
     print('[LOG] Write the result of the mocked CHAT')
     with open(output_path, 'w') as outfile:
         print('folded_VAF', 'log2-LRR', 'min_square_dist', 'est_purity', sep='\t', file=outfile)
 
-        for segment in updated_segments:
+        for segment in normalized_segments:
             print(*segment, sep='\t', file=outfile)
 
 
@@ -135,18 +136,16 @@ def get_min_square_dists(segments, max_ploidy, npl, origin):
     """
     Return the min squared dists of all segments and their cognate estimated purities
     """
-
-    print('[LOG] ... Estimate the tumor purity using the segments')
-    purities = np.arange(0.0, 1.01, 0.01)
-    min_square_dists = np.full(len(segments), 10000)
-    est_purities = np.full(len(segments), 10000)
+    purities = np.arange(0.01, 1.01, 0.01)
+    min_square_dists = np.full(len(segments), 10000, dtype='float64')
+    est_purities = np.full(len(segments), 10000, dtype='float64')
     origin_x, origin_y = origin
 
     for est_purity in purities:
         canonical_lines = get_canonical_lines(origin_x, origin_y, max_ploidy, npl, est_purity)
         square_dists = get_square_dists(segments, canonical_lines)
-        min_square_dists[square_dists < min_square_dists] = square_dists[square_dists < min_square_dists]
         est_purities[square_dists < min_square_dists] = est_purity
+        min_square_dists[square_dists < min_square_dists] = square_dists[square_dists < min_square_dists]
 
     return min_square_dists, est_purities
 
@@ -223,7 +222,16 @@ def append_info_to_segments(segments, min_square_dists, est_purities):
         segment.append(est_purity)
         updated_segments.append(segment)
 
-    return updated_segments
+    return np.array(updated_segments)
+
+
+def normalize_segments(segments):
+    for i in range(segments.shape[1]):
+        col_values = segments[:, i]
+        col_values = (col_values - np.mean(col_values)) / np.std(col_values)
+        segments[:, i] = col_values
+
+    return segments
 
 
 if __name__ == '__main__':
