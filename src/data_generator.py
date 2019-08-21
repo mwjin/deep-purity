@@ -10,12 +10,12 @@ class DataGenerator(keras.utils.Sequence):
     """
     it generates a data sequence to train and test our model
     """
-    def __init__(self, data_paths, batch_size=16, num_channels=9, num_labels=1, shuffle=True):
+    def __init__(self, data_paths, input_keys, output_key, batch_size, shuffle=True):
         self.batch_size = batch_size
         self.data_paths = data_paths
         self.indices = np.arange(len(self.data_paths))
-        self.num_channels = num_channels
-        self.num_labels = num_labels
+        self.input_keys = input_keys
+        self.output_key = output_key
         self.shuffle = shuffle
         self.on_epoch_end()
 
@@ -44,31 +44,30 @@ class DataGenerator(keras.utils.Sequence):
         if self.shuffle:
             np.random.shuffle(self.indices)
 
-    def _generate_data(self, data_paths):
+    def _generate_data(self, batch_data_paths):
         """
         generates data containing batch_size samples
         you should modify this function to fit in your data
-        """
-        data_keys = ['vaf_hist_array', 'vaf_lrr_image']
-        label_key = 'tumor_purity'
 
-        batch_data_dict = {
-            'vaf_hist_array': np.empty((self.batch_size, 101)),
-            'vaf_lrr_image': np.empty((self.batch_size, 401, 501, 1))
-        }
-        batch_labels = np.empty((self.batch_size, self.num_labels), dtype=float)
+        :param batch_data_paths: a list of data paths of which the number of elements is self.batch_size
+        """
+        batch_data_dict = {input_key: None for input_key in self.input_keys}
+        batch_labels = np.empty((self.batch_size, 1))
 
         # load images from each path of image files
-        for i, data_path in enumerate(data_paths):
-            with h5py.File(data_path, 'r') as infile:
+        for i, data_path in enumerate(batch_data_paths):
+            with h5py.File(data_path, 'r') as data:
                 data_dict = {}
 
-                for key in infile.keys():
-                    data_dict[key] = infile[key].value
+                for data_key in data.keys():
+                    data_dict[data_key] = data[data_key].value
 
-            for key in data_keys:
-                batch_data_dict[key][i, ] = data_dict[key]
+            for input_key in self.input_keys:
+                if batch_data_dict[input_key] is None:
+                    batch_data_dict[input_key] = np.empty((self.batch_size, *data_dict[input_key].shape))
 
-            batch_labels[i, ] = data_dict[label_key]
+                batch_data_dict[input_key][i, ] = data_dict[input_key]
+
+            batch_labels[i, ] = data_dict[self.output_key]
 
         return batch_data_dict, batch_labels
