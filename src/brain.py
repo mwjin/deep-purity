@@ -71,8 +71,8 @@ def train_model(train_model_path, base_model_path,
 
     params = {
         'batch_size': BATCH_SIZE,
-        'num_labels': 1,
-        'num_channels': 9,
+        'input_keys': ['vaf_hist_array', 'vaf_lrr_image'],
+        'output_key': 'tumor_purity',
         'shuffle': True
     }
 
@@ -114,8 +114,8 @@ def test_model(test_result_path, train_model_path, test_data_list_path):
 
     params = {
         'batch_size': 1,
-        'num_labels': 1,
-        'num_channels': 9,
+        'input_keys': ['vaf_hist_array', 'vaf_lrr_image'],
+        'output_key': 'tumor_purity',
         'shuffle': False
     }
     test_data_generator = DataGenerator(test_data_paths, **params)
@@ -145,13 +145,14 @@ def _build_cnn_model(input_tensor):
     """
     Inspired by LeNet-5
     """
-    conv = Conv2D(6, 5, padding="valid", name='conv_1')(input_tensor)
-    conv = MaxPool2D(2, 2, name='avg_pool_1')(conv)
-    conv = Conv2D(16, 5, padding="valid", name='conv_2')(conv)
-    conv = MaxPool2D(2, 2, name='avg_pool_2')(conv)
+    conv = \
+        Conv2D(6, 5, kernel_initializer='he_uniform', activation='relu', padding="same", name='conv_1')(input_tensor)
+    conv = MaxPool2D(2, 2, name='pool_1')(conv)
+    conv = Conv2D(16, 5, kernel_initializer='he_uniform', activation='relu', padding="same", name='conv_2')(conv)
+    conv = MaxPool2D(2, 2, name='pool_2')(conv)
     conv = Flatten(name='flatten')(conv)
-    conv = Dense(1024, kernel_initializer='he_uniform', activation='relu', name='fc_1')(conv)
-    conv = Dense(512, kernel_initializer='he_uniform', activation='relu', name='fc_2')(conv)
+    conv = Dense(512, kernel_initializer='he_uniform', activation='relu', name='fc_1')(conv)
+    conv = Dense(128, kernel_initializer='he_uniform', activation='relu', name='fc_2')(conv)
     model = Model(inputs=[input_tensor], outputs=conv)
 
     return model
