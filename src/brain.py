@@ -13,7 +13,7 @@ import functools
 
 from keras import backend as kb
 from keras.models import Model, load_model
-from keras.layers import Dense, Dropout, Flatten, concatenate
+from keras.layers import Dense, Flatten, concatenate, BatchNormalization
 from keras.layers import Conv2D, Input, MaxPool2D
 from keras.callbacks import ModelCheckpoint, EarlyStopping, History
 from keras import regularizers
@@ -37,7 +37,7 @@ def make_base_model(base_model_path):
     full_conn_layer = Dense(512, kernel_initializer='he_uniform', activation='relu',
                             kernel_regularizer=regularizers.l2(0.0))(vaf_hist_input)
     full_conn_out = Dense(512, kernel_initializer='he_uniform', activation='relu',
-                            kernel_regularizer=regularizers.l2(0.0))(full_conn_layer)
+                          kernel_regularizer=regularizers.l2(0.0))(full_conn_layer)
 
     # concatenate two models
     concat_layer = concatenate([vaf_lrr_cnn_model.output, full_conn_out])
@@ -146,13 +146,14 @@ def _build_cnn_model(input_tensor):
     Inspired by LeNet-5
     """
     conv = \
-        Conv2D(6, 5, kernel_initializer='he_uniform', activation='relu', padding="same", name='conv_1')(input_tensor)
+        Conv2D(8, 2, kernel_initializer='he_uniform', activation='relu', padding="same", name='conv_1')(input_tensor)
+    conv = BatchNormalization()(conv)
     conv = MaxPool2D(2, 2, name='pool_1')(conv)
-    conv = Conv2D(16, 5, kernel_initializer='he_uniform', activation='relu', padding="same", name='conv_2')(conv)
+    conv = Conv2D(4, 2, kernel_initializer='he_uniform', activation='relu', padding="same", name='conv_2')(conv)
+    conv = BatchNormalization()(conv)
     conv = MaxPool2D(2, 2, name='pool_2')(conv)
     conv = Flatten(name='flatten')(conv)
-    conv = Dense(512, kernel_initializer='he_uniform', activation='relu', name='fc_1')(conv)
-    conv = Dense(128, kernel_initializer='he_uniform', activation='relu', name='fc_2')(conv)
+    conv = Dense(128, kernel_initializer='he_uniform', activation='relu', name='fc_1')(conv)
     model = Model(inputs=[input_tensor], outputs=conv)
 
     return model
