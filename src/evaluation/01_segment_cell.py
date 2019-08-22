@@ -31,7 +31,7 @@ def main():
     segment_size = 1000
     cell_lines = ['HCC1143', 'HCC1954', 'HCC1187', 'HCC2218']
     depth = '30x'
-    norm_contams = [2.5, 5, 7.5, 10, 20, 30, 40, 50, 60, 70, 80, 90, 95]  # unit: percent
+    norm_contams = list(range(5, 100, 5))
 
     jobs = []  # a list of the 'Job' class
 

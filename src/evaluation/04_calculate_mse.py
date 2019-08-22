@@ -11,7 +11,7 @@ def main():
     # param settings
     cell_lines = ['HCC1143', 'HCC1954', 'HCC1187', 'HCC2218']
     depth = '30x'
-    tumor_purities = [5, 10, 20, 30, 40, 50, 60, 70, 80, 90, 95]  # unit: percent
+    tumor_purities = list(range(5, 100, 5))
 
     # path settings
     project_dir = '/extdata4/baeklab/minwoo/projects/deep-purity'
