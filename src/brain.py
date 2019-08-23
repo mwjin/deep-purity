@@ -144,13 +144,12 @@ def see_model_weights(model_path):
 def _build_cnn_model(input_tensor):
     """
     Inspired by LeNet-5
+    # TODO: ResNet
     """
     conv = \
         Conv2D(8, 2, kernel_initializer='he_uniform', activation='relu', padding="same", name='conv_1')(input_tensor)
-    conv = BatchNormalization()(conv)
     conv = MaxPool2D(2, 2, name='pool_1')(conv)
     conv = Conv2D(4, 2, kernel_initializer='he_uniform', activation='relu', padding="same", name='conv_2')(conv)
-    conv = BatchNormalization()(conv)
     conv = MaxPool2D(2, 2, name='pool_2')(conv)
     conv = Flatten(name='flatten')(conv)
     conv = Dense(128, kernel_initializer='he_uniform', activation='relu', name='fc_1')(conv)
