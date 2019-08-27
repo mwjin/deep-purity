@@ -50,7 +50,7 @@ if len(chat_result_df.index) >= chat_seg_cnt:
 else:
     chat_result_df = chat_result_df.sample(n=chat_seg_cnt, replace=True)
 
-chat_result_df = chat_result_df.sort_values(by=['folded_VAF', 'log2-LRR', 'min_square_dist'], ascending=False)
+# chat_result_df = chat_result_df.sort_values(by=['folded_VAF', 'log2-LRR', 'min_square_dist'], ascending=False)
 vaf_lrr_image = chat_result_df.to_numpy()
 vaf_lrr_image =  vaf_lrr_image[:, :, np.newaxis]  # expand the dimension
 del(chat_result_df)
