@@ -10,12 +10,14 @@ import time
 import matplotlib.pyplot as plt
 import tensorflow as tf
 import functools
+import keras
 
 from keras import backend as kb
 from keras.models import Model, load_model
 from keras.layers import Dense, Dropout, Flatten, concatenate
-from keras.layers import Conv2D, Input
+from keras.layers import Conv2D, Input, MaxPool2D
 from keras.callbacks import ModelCheckpoint, EarlyStopping, History
+from keras_applications.resnet import ResNet50
 from keras import regularizers
 from data_generator import DataGenerator
 
@@ -30,20 +32,22 @@ def make_base_model(base_model_path):
     """
     # build a CNN model for VAF-LRR plots
     vaf_lrr_layer = Input(shape=(1000, 4, 1), name='vaf_lrr_image')
-    vaf_lrr_cnn_model = _build_cnn_model(vaf_lrr_layer, input_shape=(1000, 4, 1))
+    vaf_lrr_cnn_model = _build_cnn_model(vaf_lrr_layer)
 
     # build a fully connected layer for VAF histograms of somatic mutations
+    """
     vaf_hist_layer = Input(shape=(101,), name='vaf_hist_array')
     full_conn_layer = Dense(512, kernel_initializer='he_uniform', activation='relu',
                             kernel_regularizer=regularizers.l2(0.0))(vaf_hist_layer)
     full_conn_out = Dense(512, kernel_initializer='he_uniform', activation='relu',
                             kernel_regularizer=regularizers.l2(0.0))(full_conn_layer)
+    """
 
     # concatenate two models
-    concat_layer = concatenate([vaf_lrr_cnn_model.output, full_conn_out])
-    pred_out_layer = Dense(1, activation=None, name='output')(concat_layer)
+    # concat_layer = concatenate([vaf_lrr_cnn_model.output, full_conn_out])
+    pred_out_layer = Dense(1, activation=None, name='output')(vaf_lrr_cnn_model.output)
 
-    model = Model(inputs=[vaf_lrr_layer, vaf_hist_layer], outputs=pred_out_layer)
+    model = Model(inputs=[vaf_lrr_layer], outputs=pred_out_layer)
     model.compile(loss='mean_squared_error', optimizer='adam')
 
     print(model.summary())
@@ -141,15 +145,15 @@ def see_model_weights(model_path):
         print(weights)
 
 
-def _build_cnn_model(input_tensor, input_shape):
-    conv = Conv2D(8, (2, 1), padding="valid", input_shape=input_shape, name='conv_1')(input_tensor)
-    conv = Conv2D(16, (3, 1), padding="same", name='conv_3')(conv)
-    conv = Dropout(0.3, name='DO_2')(conv)
+def _build_cnn_model(input_tensor):
+    conv = \
+        Conv2D(4, 2, kernel_initializer='he_uniform', activation='relu', padding="same", name='conv_1')(input_tensor)
+    conv = MaxPool2D(2, 2, name='pool_1')(conv)
+    conv = Conv2D(16, 2, kernel_initializer='he_uniform', activation='relu', padding="same", name='conv_2')(conv)
+    conv = MaxPool2D(2, 2, name='pool_2')(conv)
     conv = Flatten(name='flatten')(conv)
     conv = Dense(128, kernel_initializer='he_uniform', activation='relu', name='fc_1')(conv)
-    conv_out = Dense(3, kernel_initializer='he_uniform', activation='relu', name='fc_read')(conv)
-
-    model = Model(inputs=[input_tensor], outputs=conv_out)
+    model = Model(inputs=[input_tensor], outputs=conv)
 
     return model
 
