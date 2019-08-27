@@ -10,11 +10,13 @@ import time
 import matplotlib.pyplot as plt
 import tensorflow as tf
 import functools
+import keras
 
 from keras import backend as kb
 from keras.models import Model, load_model
 from keras.layers import Dense, Flatten, concatenate, BatchNormalization
 from keras.layers import Conv2D, Input, MaxPool2D
+from keras.applications import ResNet50
 from keras.callbacks import ModelCheckpoint, EarlyStopping, History
 from keras import regularizers
 from data_generator import DataGenerator
@@ -33,17 +35,18 @@ def make_base_model(base_model_path):
     vaf_lrr_cnn_model = _build_cnn_model(vaf_lrr_input)
 
     # build a fully connected layer for VAF histograms of somatic mutations
+    """
     vaf_hist_input = Input(shape=(101,), name='vaf_hist_array')
     full_conn_layer = Dense(512, kernel_initializer='he_uniform', activation='relu',
                             kernel_regularizer=regularizers.l2(0.0))(vaf_hist_input)
     full_conn_out = Dense(512, kernel_initializer='he_uniform', activation='relu',
                           kernel_regularizer=regularizers.l2(0.0))(full_conn_layer)
-
+    """
     # concatenate two models
-    concat_layer = concatenate([vaf_lrr_cnn_model.output, full_conn_out])
-    pred_out_layer = Dense(1, activation=None, name='output')(concat_layer)
+    # concat_layer = concatenate([vaf_lrr_cnn_model.output])
+    pred_out_layer = Dense(1, activation=None, name='output')(vaf_lrr_cnn_model.output)
 
-    model = Model(inputs=[vaf_lrr_input, vaf_hist_input], outputs=pred_out_layer)
+    model = Model(inputs=[vaf_lrr_input], outputs=pred_out_layer)
     model.compile(loss='mean_squared_error', optimizer='adam')
 
     print(model.summary())
@@ -146,6 +149,7 @@ def _build_cnn_model(input_tensor):
     Inspired by LeNet-5
     # TODO: ResNet
     """
+    """
     conv = \
         Conv2D(8, 2, kernel_initializer='he_uniform', activation='relu', padding="same", name='conv_1')(input_tensor)
     conv = MaxPool2D(2, 2, name='pool_1')(conv)
@@ -154,7 +158,12 @@ def _build_cnn_model(input_tensor):
     conv = Flatten(name='flatten')(conv)
     conv = Dense(128, kernel_initializer='he_uniform', activation='relu', name='fc_1')(conv)
     model = Model(inputs=[input_tensor], outputs=conv)
-
+    """
+    conv = \
+        Conv2D(3, 1, kernel_initializer='he_uniform', activation='relu', padding='valid', name='conv_1')(input_tensor)
+    res_model = ResNet50(weights='imagenet')
+    res_model = res_model(conv)
+    model = Model(inputs=[input_tensor], outputs=res_model)
     return model
 
 
