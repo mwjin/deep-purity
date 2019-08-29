@@ -54,7 +54,7 @@ def make_base_model(base_model_path):
 
 
 def train_model(train_model_path, base_model_path,
-                train_data_list_path, valid_data_list_path, draw_learning_curve=True):
+                train_data_list_path, valid_data_list_path, draw_loss_curve=True):
     """
     Train our model
     """
@@ -89,17 +89,17 @@ def train_model(train_model_path, base_model_path,
     model.fit_generator(train_data_generator, epochs=MAX_EPOCH, callbacks=[model_ckpt, early_stop_cond, history],
                         validation_data=valid_data_generator, verbose=1)
 
-    if draw_learning_curve:
-        print('[LOG] Draw learning curve', time.ctime())
+    if draw_loss_curve:
+        print('[LOG] Draw the loss curve', time.ctime())
         model_dir, model_filename = os.path.split(train_model_path)
         model_filename_wo_ext = os.path.splitext(model_filename)[0]
 
-        plot_dir = f'{model_dir}/learning-curve'
+        plot_dir = f'{model_dir}/loss-curve'
         plot_path = f'{plot_dir}/{model_filename_wo_ext}.png'
         plot_title = f'Model loss ({model_filename_wo_ext})'
         os.makedirs(plot_dir, exist_ok=True)
 
-        _draw_learning_curve(plot_path, plot_title, history)
+        _draw_loss_curve(plot_path, plot_title, history)
 
     print('[LOG] Training is terminated.', time.ctime())
 
@@ -182,9 +182,9 @@ def _make_keras_metric_func(method):
     return wrapper
 
 
-def _draw_learning_curve(plot_path, plot_title, history):
+def _draw_loss_curve(plot_path, plot_title, history):
     """
-    Draw learning curve using history of keras callbacks
+    Draw curves of losses using history of keras callbacks
     Ref: https://machinelearningmastery.com/display-deep-learning-model-training-history-in-keras
     """
     train_losses = history.history['loss']
@@ -195,9 +195,8 @@ def _draw_learning_curve(plot_path, plot_title, history):
     plt.title(plot_title)
     plt.ylabel('loss')
     plt.xlabel('epoch')
-    plt.ylim(0, 0.05)
-    plt.legend(['train', 'validation'], loc='upper left')
-    # plt.yscale('log')
+    plt.ylim((0, 0.05))
+    plt.legend(['train', 'validation'], loc='best')
     plt.savefig(plot_path)
     plt.close()
 
