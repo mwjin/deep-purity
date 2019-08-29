@@ -15,15 +15,16 @@ def main():
     # param settings
     cell_lines = ['HCC1143', 'HCC1954', 'HCC1187', 'HCC2218']
     depth = '30x'
+    model_ver = '190829-no-cnn'
 
     # path settings
     project_dir = '/extdata4/baeklab/minwoo/projects/deep-purity'
     test_data_list_dir = f'{project_dir}/data/test-data-me-list'
-    result_dir = f'{project_dir}/results/prediction'
+    result_dir = f'{project_dir}/results/prediction/{model_ver}'
     os.makedirs(result_dir, exist_ok=True)
 
     model_dir = f'{project_dir}/model'
-    train_model_path = f'{model_dir}/train_model_190821-2.hdf5'
+    train_model_path = f'{model_dir}/train_model_{model_ver}.hdf5'
 
     if not os.path.isfile(train_model_path):
         sys.exit(f'[ERROR] The base model \'{train_model_path}\' does not exist. '
