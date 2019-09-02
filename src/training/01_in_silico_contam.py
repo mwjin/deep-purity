@@ -26,8 +26,18 @@ def main():
     log_dir = f'{PROJECT_DIR}/log/{job_name_prefix}/{time_stamp()}'
 
     # param settings
-    cell_lines = ['HCC1143', 'HCC1954', 'HCC1187', 'HCC2218']
-    depths = ['30x']
+    benchmark_list = ['tcga-benchmark4', 'giab']
+    cell_line_dict = {
+        'tcga-benchmark4': ['HCC1143', 'HCC1954', 'HCC1187', 'HCC2218'],
+        'giab': ['HG003_NA24149_father', 'HG004_NA24143_mother'],
+    }
+    depth_dict = {
+        'tcga-benchmark4': ['30x'],
+        'giab': ['100x', '150x'],
+    }
+    benchmark = benchmark_list[1]
+    cell_lines = cell_line_dict[benchmark]
+    depths = depth_dict[benchmark]
 
     # script path settings
     samtools = '/home/lab/anaconda3/envs/Sukjun/bin/samtools'
@@ -35,16 +45,26 @@ def main():
     picard = '/extdata6/Beomman/bins/picard/build/libs/picard.jar'
 
     # path settings
-    bam_dir = '/extdata4/baeklab/minwoo/data/TCGA-HCC-DEPTH-NORM'
+    bam_dir_dict = {
+        'tcga-benchmark4': '/extdata4/baeklab/minwoo/data/TCGA-HCC-DEPTH-NORM',
+        'giab': '/extdata4/baeklab/minwoo/data/giab/illumina-paired-wes'
+    }
+    bam_dir = bam_dir_dict[benchmark]
     jobs = []  # a list of the 'Job' class
     norm_contams = list(range(5, 100, 5))
 
     for cell_line in cell_lines:
         for depth in depths:
             # in-loop path settings
-            tumor_bam_path = f'{bam_dir}/{cell_line}/{cell_line}.TUMOR.{depth}.bam'
-            norm_bam_path = f'{bam_dir}/{cell_line}/{cell_line}.NORMAL.{depth}.bam'
-            out_bam_dir = f'/extdata4/baeklab/minwoo/data/TCGA-HCC-DEPTH-NORM-MIX/{cell_line}/{depth}'
+            if benchmark == 'giab':
+                tumor_bam_path = f'{bam_dir}/{depth}/HG002_NA24385_son.bam'
+                norm_bam_path = f'{bam_dir}/{depth}/{cell_line}.bam'
+                out_bam_dir = f'/extdata4/baeklab/minwoo/data/giab-mix/HG002-{cell_line.split("_")[0]}/{depth}'
+            else:  # tcga-benchmark4
+                tumor_bam_path = f'{bam_dir}/{cell_line}/{cell_line}.TUMOR.{depth}.bam'
+                norm_bam_path = f'{bam_dir}/{cell_line}/{cell_line}.NORMAL.{depth}.bam'
+                out_bam_dir = f'{bam_dir}-MIX/{cell_line}/{depth}'
+
             temp_dir = f'{out_bam_dir}/temp'
             os.makedirs(temp_dir, exist_ok=True)
 
@@ -55,7 +75,11 @@ def main():
 
                 # in-loop path settings
                 purity_tag = f'n{int(contam)}t{int(purity)}'
-                out_bam_path = f'{out_bam_dir}/{cell_line}.{purity_tag}.{depth}.bam'
+
+                if benchmark == 'giab':
+                    out_bam_path = f'{out_bam_dir}/{cell_line}.{purity_tag}.{depth}.bam'
+                else:
+                    out_bam_path = f'{out_bam_dir}/HG001-{cell_line.split("_")[0]}.{purity_tag}.{depth}.bam'
 
                 tumor_temp_bam_path = f'{temp_dir}/{os.path.basename(tumor_bam_path)}'
                 tumor_temp_bam_path = tumor_temp_bam_path.replace('.bam', '.%d%%.bam' % purity)
