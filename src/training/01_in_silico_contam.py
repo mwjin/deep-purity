@@ -37,7 +37,7 @@ def main():
     # path settings
     bam_dir = '/extdata4/baeklab/minwoo/data/TCGA-HCC-DEPTH-NORM'
     jobs = []  # a list of the 'Job' class
-    normal_contams = [2.5, 5, 7.5, 10, 20, 30, 40, 50, 60, 70, 80, 90, 95]
+    norm_contams = list(range(5, 100, 5))
 
     for cell_line in cell_lines:
         for depth in depths:
@@ -48,7 +48,7 @@ def main():
             temp_dir = f'{out_bam_dir}/temp'
             os.makedirs(temp_dir, exist_ok=True)
 
-            for contam in normal_contams:
+            for contam in norm_contams:
                 purity = 100 - contam
                 norm_ratio = contam / 100
                 tumor_ratio = purity / 100

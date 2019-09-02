@@ -41,8 +41,7 @@ def main():
     data_classes = ['train-set', 'valid-set']
     cell_lines = ['HCC1143', 'HCC1954']
     depths = ['30x']
-    norm_contams = [5, 10, 20, 30, 40, 50, 60, 70, 80, 90, 95]  # unit: percent
-
+    norm_contams = list(range(5, 100, 5))
     jobs = []  # a list of the 'Job' class
 
     for data_class in data_classes:
@@ -88,7 +87,7 @@ def main():
                             job_index += 1
 
         # make a list of vaf_hists made by this script for training and testing the model
-        with open(data_list_path, 'w') as data_list_file:
+        with open(data_list_path, 'a') as data_list_file:
             for learn_data_path in learn_data_paths:
                 print(learn_data_path, file=data_list_file)
 

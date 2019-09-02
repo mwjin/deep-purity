@@ -63,7 +63,7 @@ def main():
     dbsnp_path = dbsnp_dict[cell_line]
 
     jobs = []  # a list of the 'Job' class
-    norm_contams = [2.5, 5, 7.5, 10, 20, 30, 40, 50, 60, 70, 80, 90, 95]
+    norm_contams = list(range(5, 100, 5))
 
     for norm_contam in norm_contams:
         tumor_purity = 100 - norm_contam

@@ -41,7 +41,7 @@ def main():
     variant_classes = ['train-set', 'valid-set']
     cell_lines = ['HCC1143', 'HCC1954']
     depths = ['30x']
-    norm_contams = [2.5, 5, 7.5, 10, 20, 30, 40, 50, 60, 70, 80, 90, 95]  # unit: percent
+    norm_contams = list(range(5, 100, 5))
 
     jobs = []  # a list of the 'Job' class
 
@@ -79,7 +79,8 @@ def main():
                                 print(cmd)
                             else:
                                 prev_job_name = f'{prev_job_prefix}.{cell_line}.{depth}.{purity_tag}'
-                                one_job_name = f'{job_name_prefix}.{cell_line}.{depth}.{purity_tag}.{job_index}'
+                                one_job_name = \
+                                    f'{job_name_prefix}.{cell_line}.{depth}.{purity_tag}.{variant_class}.{job_index}'
                                 one_job = Job(one_job_name, cmd, hold_jid=prev_job_name)
                                 jobs.append(one_job)
 

@@ -11,11 +11,12 @@ def main():
     # param settings
     cell_lines = ['HCC1143', 'HCC1954', 'HCC1187', 'HCC2218']
     depth = '30x'
-    tumor_purities = [5, 10, 20, 30, 40, 50, 60, 70, 80, 90, 95]  # unit: percent
+    model_ver = '190829-no-cnn'
+    tumor_purities = list(range(5, 100, 5))
 
     # path settings
     project_dir = '/extdata4/baeklab/minwoo/projects/deep-purity'
-    pred_result_dir = f'{project_dir}/results/prediction'  # input
+    pred_result_dir = f'{project_dir}/results/prediction/{model_ver}'  # input
     mse_result_path = f'{pred_result_dir}/mse_{depth}.txt'  # output
 
     with open(mse_result_path, 'w') as outfile:

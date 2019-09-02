@@ -34,8 +34,7 @@ def main():
 
     # path settings
     summary_script = f'{PROJECT_DIR}/src/summarize_mto.py'
-    norm_contams = [2.5, 5, 7.5, 10, 20, 30, 40, 50, 60, 70, 80, 90, 95]  # unit: percent
-
+    norm_contams = list(range(5, 100, 5))
     jobs = []  # a list of the 'Job' class
 
     for cell_line in cells:

@@ -14,11 +14,9 @@ import keras
 
 from keras import backend as kb
 from keras.models import Model, load_model
-from keras.layers import Dense, Dropout, Flatten, concatenate
+from keras.layers import Dense, Flatten
 from keras.layers import Conv2D, Input, MaxPool2D
 from keras.callbacks import ModelCheckpoint, EarlyStopping, History
-from keras_applications.resnet import ResNet50
-from keras import regularizers
 from data_generator import DataGenerator
 
 # constants
@@ -38,7 +36,7 @@ def make_base_model(base_model_path):
     """
     vaf_hist_layer = Input(shape=(101,), name='vaf_hist_array')
     full_conn_layer = Dense(512, kernel_initializer='he_uniform', activation='relu',
-                            kernel_regularizer=regularizers.l2(0.0))(vaf_hist_layer)
+                            kernel_regularizer=regularizers.l2(0.0))(vaf_hist_input)
     full_conn_out = Dense(512, kernel_initializer='he_uniform', activation='relu',
                             kernel_regularizer=regularizers.l2(0.0))(full_conn_layer)
     """
@@ -55,7 +53,7 @@ def make_base_model(base_model_path):
 
 
 def train_model(train_model_path, base_model_path,
-                train_data_list_path, valid_data_list_path, draw_learning_curve=True):
+                train_data_list_path, valid_data_list_path, draw_loss_curve=True):
     """
     Train our model
     """
@@ -75,8 +73,8 @@ def train_model(train_model_path, base_model_path,
 
     params = {
         'batch_size': BATCH_SIZE,
-        'num_labels': 1,
-        'num_channels': 9,
+        'input_keys': ['vaf_hist_array', 'vaf_lrr_image'],
+        'output_key': 'tumor_purity',
         'shuffle': True
     }
 
@@ -90,17 +88,17 @@ def train_model(train_model_path, base_model_path,
     model.fit_generator(train_data_generator, epochs=MAX_EPOCH, callbacks=[model_ckpt, early_stop_cond, history],
                         validation_data=valid_data_generator, verbose=1)
 
-    if draw_learning_curve:
-        print('[LOG] Draw learning curve', time.ctime())
+    if draw_loss_curve:
+        print('[LOG] Draw the loss curve', time.ctime())
         model_dir, model_filename = os.path.split(train_model_path)
         model_filename_wo_ext = os.path.splitext(model_filename)[0]
 
-        plot_dir = f'{model_dir}/learning-curve'
+        plot_dir = f'{model_dir}/loss-curve'
         plot_path = f'{plot_dir}/{model_filename_wo_ext}.png'
         plot_title = f'Model loss ({model_filename_wo_ext})'
         os.makedirs(plot_dir, exist_ok=True)
 
-        _draw_learning_curve(plot_path, plot_title, history)
+        _draw_loss_curve(plot_path, plot_title, history)
 
     print('[LOG] Training is terminated.', time.ctime())
 
@@ -118,8 +116,8 @@ def test_model(test_result_path, train_model_path, test_data_list_path):
 
     params = {
         'batch_size': 1,
-        'num_labels': 1,
-        'num_channels': 9,
+        'input_keys': ['vaf_hist_array', 'vaf_lrr_image'],
+        'output_key': 'tumor_purity',
         'shuffle': False
     }
     test_data_generator = DataGenerator(test_data_paths, **params)
@@ -154,7 +152,6 @@ def _build_cnn_model(input_tensor):
     conv = Flatten(name='flatten')(conv)
     conv = Dense(128, kernel_initializer='he_uniform', activation='relu', name='fc_1')(conv)
     model = Model(inputs=[input_tensor], outputs=conv)
-
     return model
 
 
@@ -173,9 +170,9 @@ def _make_keras_metric_func(method):
     return wrapper
 
 
-def _draw_learning_curve(plot_path, plot_title, history):
+def _draw_loss_curve(plot_path, plot_title, history):
     """
-    Draw learning curve using history of keras callbacks
+    Draw curves of losses using history of keras callbacks
     Ref: https://machinelearningmastery.com/display-deep-learning-model-training-history-in-keras
     """
     train_losses = history.history['loss']
@@ -186,8 +183,8 @@ def _draw_learning_curve(plot_path, plot_title, history):
     plt.title(plot_title)
     plt.ylabel('loss')
     plt.xlabel('epoch')
-    plt.legend(['train', 'validation'], loc='upper left')
-    # plt.yscale('log')
+    plt.ylim((0, 0.05))
+    plt.legend(['train', 'validation'], loc='best')
     plt.savefig(plot_path)
     plt.close()
 

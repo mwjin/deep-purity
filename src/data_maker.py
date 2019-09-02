@@ -37,7 +37,7 @@ for _, variant in variant_df.iterrows():
     vaf_hist[int(round(vaf, 2) * 100)] += 1
 
 vaf_hist = vaf_hist / variant_cnt  # normalization
-del(variant_df)
+del variant_df
 
 # make a image for folded VAF-log2 LRR plot in CHAT
 print('[LOG] Make a folded VAF-log2 LRR image using segments')
@@ -52,8 +52,8 @@ else:
 
 # chat_result_df = chat_result_df.sort_values(by=['folded_VAF', 'log2-LRR', 'min_square_dist'], ascending=False)
 vaf_lrr_image = chat_result_df.to_numpy()
-vaf_lrr_image =  vaf_lrr_image[:, :, np.newaxis]  # expand the dimension
-del(chat_result_df)
+vaf_lrr_image = vaf_lrr_image[:, :, np.newaxis]  # expand the dimension
+del chat_result_df
 
 # store the vaf histogram
 with h5py.File(out_data_path, 'w') as outfile:
