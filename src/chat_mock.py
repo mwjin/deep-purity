@@ -28,13 +28,12 @@ def main():
     non_euploid_segments = segment_filter(non_euploid_segments, origin)
     min_square_dists, est_purities = get_min_square_dists(non_euploid_segments, max_ploidy, npl, origin)
     updated_segments = append_info_to_segments(non_euploid_segments, min_square_dists, est_purities)
-    normalized_segments = normalize_segments(updated_segments)
 
     print('[LOG] Write the result of the mocked CHAT')
     with open(output_path, 'w') as outfile:
         print('folded_VAF', 'log2-LRR', 'min_square_dist', 'est_purity', sep='\t', file=outfile)
 
-        for segment in normalized_segments:
+        for segment in updated_segments:
             print(*segment, sep='\t', file=outfile)
 
 
@@ -223,15 +222,6 @@ def append_info_to_segments(segments, min_square_dists, est_purities):
         updated_segments.append(segment)
 
     return np.array(updated_segments)
-
-
-def normalize_segments(segments):
-    for i in range(segments.shape[1]):
-        col_values = segments[:, i]
-        col_values = (col_values - np.mean(col_values)) / np.std(col_values)
-        segments[:, i] = col_values
-
-    return segments
 
 
 if __name__ == '__main__':
