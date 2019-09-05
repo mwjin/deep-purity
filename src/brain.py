@@ -10,18 +10,18 @@ import time
 import matplotlib.pyplot as plt
 import tensorflow as tf
 import functools
-import keras
 
 from keras import backend as kb
 from keras.models import Model, load_model
 from keras.layers import Dense, Flatten
-from keras.layers import Conv2D, Input, MaxPool2D
-from keras.callbacks import ModelCheckpoint, EarlyStopping, History
+from keras.layers import Conv2D, Input
+from keras.callbacks import ModelCheckpoint, History
 from data_generator import DataGenerator
+from my_callback import EarlyStoppingByLossVal
 
 # constants
 BATCH_SIZE = 32
-MAX_EPOCH = 500
+MAX_EPOCH = 50
 
 
 def make_base_model(base_model_path):
@@ -83,7 +83,7 @@ def train_model(train_model_path, base_model_path,
 
     # train the model
     model_ckpt = ModelCheckpoint(train_model_path, monitor='val_loss', save_best_only=True, mode='min')
-    early_stop_cond = EarlyStopping(monitor='val_loss', patience=20, verbose=1)
+    early_stop_cond = EarlyStoppingByLossVal(monitor='loss', value=0.0001, verbose=1)
     history = History()
     model.fit_generator(train_data_generator, epochs=MAX_EPOCH, callbacks=[model_ckpt, early_stop_cond, history],
                         validation_data=valid_data_generator, verbose=1)
@@ -145,12 +145,13 @@ def see_model_weights(model_path):
 
 def _build_cnn_model(input_tensor):
     conv = \
-        Conv2D(4, 2, kernel_initializer='he_uniform', activation='relu', padding="same", name='conv_1')(input_tensor)
-    conv = MaxPool2D(2, 2, name='pool_1')(conv)
-    conv = Conv2D(16, 2, kernel_initializer='he_uniform', activation='relu', padding="same", name='conv_2')(conv)
-    conv = MaxPool2D(2, 2, name='pool_2')(conv)
+        Conv2D(8, (8, 2), strides=(1, 2), kernel_initializer='he_uniform', activation='relu',
+               padding="valid", name='conv_1')(input_tensor)
+    conv = \
+        Conv2D(4, 2, kernel_initializer='he_uniform', activation='relu', padding="valid", name='conv_2')(conv)
     conv = Flatten(name='flatten')(conv)
-    conv = Dense(128, kernel_initializer='he_uniform', activation='relu', name='fc_1')(conv)
+    conv = Dense(256, kernel_initializer='he_uniform', activation='relu', name='fc_1')(conv)
+    conv = Dense(32, kernel_initializer='he_uniform', activation='relu', name='fc_2')(conv)
     model = Model(inputs=[input_tensor], outputs=conv)
     return model
 
