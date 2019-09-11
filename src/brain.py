@@ -14,8 +14,8 @@ import functools
 from keras import backend as kb
 from keras.models import Model, load_model
 from keras.layers import Dense, Flatten
-from keras.layers import Conv2D, Input
-from keras.callbacks import ModelCheckpoint, History
+from keras.layers import Conv2D, Input, MaxPooling2D, GlobalAveragePooling2D
+from keras.callbacks import ModelCheckpoint, History, EarlyStopping
 from data_generator import DataGenerator
 from my_callback import EarlyStoppingByLossVal
 
@@ -29,8 +29,13 @@ def make_base_model(base_model_path):
     make our model
     """
     # build a CNN model for VAF-LRR plots
-    vaf_lrr_layer = Input(shape=(1000, 4, 1), name='vaf_lrr_image')
-    vaf_lrr_cnn_model = _build_cnn_model(vaf_lrr_layer)
+    vaf_lrr_layer = Input(shape=(1000, 2, 1), name='vaf_lrr_image')
+    conv = \
+        Conv2D(256, (100, 2), strides=(1, 2), kernel_initializer='he_uniform', activation='relu',
+               padding="valid", name='conv_1')(vaf_lrr_layer)
+    conv = GlobalAveragePooling2D()(conv)
+    conv = Dense(32, kernel_initializer='he_uniform', activation='relu', name='fc_2')(conv)
+    vaf_lrr_cnn_model = Model(inputs=[vaf_lrr_layer], outputs=conv)
 
     # build a fully connected layer for VAF histograms of somatic mutations
     """
@@ -83,9 +88,9 @@ def train_model(train_model_path, base_model_path,
 
     # train the model
     model_ckpt = ModelCheckpoint(train_model_path, monitor='val_loss', save_best_only=True, mode='min')
-    early_stop_cond = EarlyStoppingByLossVal(monitor='loss', value=0.0001, verbose=1)
+    early_stop_cond = EarlyStopping(monitor='val_loss', patience=10, verbose=1)
     history = History()
-    model.fit_generator(train_data_generator, epochs=MAX_EPOCH, callbacks=[model_ckpt, early_stop_cond, history],
+    model.fit_generator(train_data_generator, epochs=MAX_EPOCH, callbacks=[model_ckpt, history],
                         validation_data=valid_data_generator, verbose=1)
 
     if draw_loss_curve:
@@ -141,19 +146,6 @@ def see_model_weights(model_path):
     for layer in model.layers[1:]:
         weights, _ = layer.get_weights()
         print(weights)
-
-
-def _build_cnn_model(input_tensor):
-    conv = \
-        Conv2D(8, (8, 2), strides=(1, 2), kernel_initializer='he_uniform', activation='relu',
-               padding="valid", name='conv_1')(input_tensor)
-    conv = \
-        Conv2D(4, 2, kernel_initializer='he_uniform', activation='relu', padding="valid", name='conv_2')(conv)
-    conv = Flatten(name='flatten')(conv)
-    conv = Dense(256, kernel_initializer='he_uniform', activation='relu', name='fc_1')(conv)
-    conv = Dense(32, kernel_initializer='he_uniform', activation='relu', name='fc_2')(conv)
-    model = Model(inputs=[input_tensor], outputs=conv)
-    return model
 
 
 def _make_keras_metric_func(method):
