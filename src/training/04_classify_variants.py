@@ -1,4 +1,4 @@
-#!/extdata6/Doyeon/anaconda3/envs/deep-purity/bin/python3.6
+#!/home/sonic/baeklab/Hyeonseong/anaconda3/envs/minwoo/bin/python
 """
 Classify variants into training and validation set using the files of the summarized MuTect outputs
 Training set: chromosome 1, 3, 5, ..., 21

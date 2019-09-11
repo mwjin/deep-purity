@@ -1,4 +1,4 @@
-#!/extdata6/Doyeon/anaconda3/envs/deep-purity/bin/python3.6
+#!/home/sonic/baeklab/Hyeonseong/anaconda3/envs/minwoo/bin/python
 """
 Make, train, and test our deep learning model
 """
@@ -14,10 +14,19 @@ import functools
 from keras import backend as kb
 from keras.models import Model, load_model
 from keras.layers import Dense, Flatten
-from keras.layers import Conv2D, Input, MaxPooling2D, GlobalAveragePooling2D
+from keras.layers import Conv2D, Input, MaxPooling2D, GlobalAveragePooling2D, GlobalMaxPooling2D
 from keras.callbacks import ModelCheckpoint, History, EarlyStopping
+from keras.utils import multi_gpu_model
 from data_generator import DataGenerator
 from my_callback import EarlyStoppingByLossVal
+
+# setting for the GPU
+from tensorflow import ConfigProto
+from tensorflow import Session
+
+config = ConfigProto()
+config.gpu_options.allow_growth = True
+session = Session(config=config)
 
 # constants
 BATCH_SIZE = 32
@@ -31,7 +40,7 @@ def make_base_model(base_model_path):
     # build a CNN model for VAF-LRR plots
     vaf_lrr_layer = Input(shape=(1000, 2, 1), name='vaf_lrr_image')
     conv = \
-        Conv2D(256, (100, 2), strides=(1, 2), kernel_initializer='he_uniform', activation='relu',
+        Conv2D(128, (100, 2), strides=(1, 2), kernel_initializer='he_uniform', activation='relu',
                padding="valid", name='conv_1')(vaf_lrr_layer)
     conv = GlobalAveragePooling2D()(conv)
     conv = Dense(32, kernel_initializer='he_uniform', activation='relu', name='fc_2')(conv)
@@ -51,6 +60,7 @@ def make_base_model(base_model_path):
     pred_out_layer = Dense(1, activation=None, name='output')(vaf_lrr_cnn_model.output)
 
     model = Model(inputs=[vaf_lrr_layer], outputs=pred_out_layer)
+    multi_gpu_model(model, gpus=4)
     model.compile(loss='mean_squared_error', optimizer='adam')
 
     print(model.summary())
@@ -90,7 +100,7 @@ def train_model(train_model_path, base_model_path,
     model_ckpt = ModelCheckpoint(train_model_path, monitor='val_loss', save_best_only=True, mode='min')
     early_stop_cond = EarlyStopping(monitor='val_loss', patience=10, verbose=1)
     history = History()
-    model.fit_generator(train_data_generator, epochs=MAX_EPOCH, callbacks=[model_ckpt, history],
+    model.fit_generator(train_data_generator, epochs=MAX_EPOCH, callbacks=[model_ckpt, early_stop_cond, history],
                         validation_data=valid_data_generator, verbose=1)
 
     if draw_loss_curve:

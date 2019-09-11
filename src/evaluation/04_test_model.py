@@ -1,4 +1,4 @@
-#!/extdata6/Doyeon/anaconda3/envs/deep-purity/bin/python3.6
+#!/home/sonic/baeklab/Hyeonseong/anaconda3/envs/minwoo/bin/python
 """
 Test the trained model by predicting purities of the test data
 
@@ -15,11 +15,11 @@ def main():
     # param settings
     cell_lines = ['HCC1143', 'HCC1954', 'HCC1187', 'HCC2218']
     depth = '30x'
-    model_ver = '190829-no-cnn'
+    model_ver = '190911-cnn1'
 
     # path settings
-    project_dir = '/extdata4/baeklab/minwoo/projects/deep-purity'
-    test_data_list_dir = f'{project_dir}/data/test-data-me-list'
+    project_dir = '/extdata1/baeklab/minwoo/projects/deep-purity'
+    test_data_list_dir = f'{project_dir}/data/test-data-2-list'
     result_dir = f'{project_dir}/results/prediction/{model_ver}'
     os.makedirs(result_dir, exist_ok=True)
 

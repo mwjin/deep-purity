@@ -1,4 +1,4 @@
-#!/extdata6/Doyeon/anaconda3/envs/deep-purity/bin/python3.6
+#!/home/sonic/baeklab/Hyeonseong/anaconda3/envs/minwoo/bin/python
 """
 This script is used to mix normal reads (a%) and tumor reads ((1 - a)%) then make virtual tumor data in silico.
 (a: normal contamination ratio)

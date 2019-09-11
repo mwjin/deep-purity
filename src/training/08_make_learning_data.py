@@ -1,4 +1,4 @@
-#!/extdata6/Doyeon/anaconda3/envs/deep-purity/bin/python3.6
+#!/home/sonic/baeklab/Hyeonseong/anaconda3/envs/minwoo/bin/python
 """
 Make images by parsing tsv files of variant samples via SGE job scheduler
 
@@ -13,7 +13,7 @@ import os
 import sys
 
 # constants
-PROJECT_DIR = '/extdata4/baeklab/minwoo/projects/deep-purity'
+PROJECT_DIR = '/extdata1/baeklab/minwoo/projects/deep-purity'
 
 
 def main():
@@ -31,8 +31,8 @@ def main():
     data_maker_script = f'{PROJECT_DIR}/src/data_maker.py'
     var_tsv_dir = f'{PROJECT_DIR}/data/variants-tsv'
     chat_tsv_dir = f'{PROJECT_DIR}/data/chat-tsv'
-    learn_data_dir = f'{PROJECT_DIR}/data/learning-data'
-    data_list_dir = f'{PROJECT_DIR}/data/learning-data-list'
+    learn_data_dir = f'{PROJECT_DIR}/data/learning-data-2'
+    data_list_dir = f'{PROJECT_DIR}/data/learning-data-2-list'
     os.makedirs(data_list_dir, exist_ok=True)
 
     # param settings
@@ -87,7 +87,7 @@ def main():
                             job_index += 1
 
         # make a list of vaf_hists made by this script for training and testing the model
-        with open(data_list_path, 'a') as data_list_file:
+        with open(data_list_path, 'w') as data_list_file:
             for learn_data_path in learn_data_paths:
                 print(learn_data_path, file=data_list_file)
 

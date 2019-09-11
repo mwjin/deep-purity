@@ -1,18 +1,18 @@
-#!/extdata6/Doyeon/anaconda3/envs/deep-purity/bin/python3.6
+#!/home/sonic/baeklab/Hyeonseong/anaconda3/envs/minwoo/bin/python
 """
 Make data to test using all variants in each cell line
 
 * Prerequisite
     1. Run 01_segment_cell.py
 """
-from lab.job import Job, qsub_sge
-from lab.utils import time_stamp
+# from lab.job import Job, qsub_sge
+# from lab.utils import time_stamp
 
 import os
 import sys
 
 # constants
-PROJECT_DIR = '/extdata4/baeklab/minwoo/projects/deep-purity'
+PROJECT_DIR = '/extdata1/baeklab/minwoo/projects/deep-purity'
 
 
 def main():
@@ -24,21 +24,23 @@ def main():
     is_test = True
     prev_job_prefix = 'Minu.DeepPurity.CHAT.Segments'
     job_name_prefix = 'Minu.DeepPurity.Make.Test.Data'
-    log_dir = f'{PROJECT_DIR}/log/{job_name_prefix}/{time_stamp()}'
+    # log_dir = f'{PROJECT_DIR}/log/{job_name_prefix}/{time_stamp()}'
 
     # path settings
     data_maker_script = f'{PROJECT_DIR}/src/data_maker.py'
     var_tsv_dir = f'{PROJECT_DIR}/data/variants-tsv/original'  # input
     chat_tsv_dir = f'{PROJECT_DIR}/data/chat-tsv/original'  # input
-    test_data_dir = f'{PROJECT_DIR}/data/test-data'  # output
-    data_list_dir = f'{PROJECT_DIR}/data/test-data-list'  # output
+    test_data_dir = f'{PROJECT_DIR}/data/test-data-2'  # output
+    data_list_dir = f'{PROJECT_DIR}/data/test-data-2-list'  # output
 
     os.makedirs(test_data_dir, exist_ok=True)
     os.makedirs(data_list_dir, exist_ok=True)
 
+    """
     if not os.path.isdir(chat_tsv_dir):
         sys.exit(f'[ERROR] The directory \'{chat_tsv_dir}\' does not exist. '
                  f'Check the path or run evaluation/01_segment_cell.py')
+    """
 
     # path settings
     cell_lines = ['HCC1143', 'HCC1954', 'HCC1187', 'HCC2218']
@@ -67,9 +69,11 @@ def main():
             out_test_data_path = f'{out_test_data_dir}/{cell_line}.{purity_tag}.{depth}.hdf5'
             test_data_paths.append(out_test_data_path)
 
+            """
             if not os.path.isfile(in_chat_tsv_path):
                 sys.exit(f'[ERROR] The file \'{in_chat_tsv_path}\' does not exist. '
                          f'Check the path or run evaluation/01_segment_cell.py')
+            """
 
             cmd = f'{data_maker_script} {out_test_data_path} {in_var_tsv_path} {in_chat_tsv_path} ' \
                   f'{tumor_purity_ratio};'

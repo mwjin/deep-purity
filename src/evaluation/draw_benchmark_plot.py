@@ -1,4 +1,4 @@
-#!/extdata6/Doyeon/anaconda3/envs/deep-purity/bin/python3.6
+#!/home/sonic/baeklab/Hyeonseong/anaconda3/envs/minwoo/bin/python
 import os
 import sys
 import numpy as np
@@ -13,7 +13,7 @@ def make_benchmark_plot():
     purities = np.round(np.arange(0.05, 1.00, 0.05), 3)
     cell_line = sys.argv[1]
     depth = '30x'
-    dp_model_ver = '190822-wo-cnn'  # for deep-purity
+    dp_model_ver = '190906-cnn1-1'  # for deep-purity
 
     # key : actual tumor purity level
     # value : tumor purity estimation value from each tool (list type, absolute-chat-deeppurity order)

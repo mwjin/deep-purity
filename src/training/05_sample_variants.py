@@ -1,4 +1,4 @@
-#!/extdata6/Doyeon/anaconda3/envs/deep-purity/bin/python3.6
+#!/home/sonic/baeklab/Hyeonseong/anaconda3/envs/minwoo/bin/python
 """
 From MTO file, randomly sample variants, then store essential information of the variants as TSV file.
 The TSV files will be used as data sets for learning
