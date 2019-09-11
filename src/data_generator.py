@@ -48,12 +48,11 @@ class DataGenerator(keras.utils.Sequence):
         """
         generates data containing batch_size samples
         you should modify this function to fit in your data
+
+        :param batch_data_paths: a list of data paths of which the number of elements is self.batch_size
         """
-        batch_data_dict = {
-            'vaf_hist_array': np.empty((self.batch_size, 101)),
-            'vaf_lrr_image': np.empty((self.batch_size, 1000, 4, 1))
-        }
-        batch_labels = np.empty((self.batch_size, 1), dtype=float)
+        batch_data_dict = {input_key: None for input_key in self.input_keys}
+        batch_labels = np.empty((self.batch_size, 1))
 
         # load images from each path of image files
         for i, data_path in enumerate(batch_data_paths):
