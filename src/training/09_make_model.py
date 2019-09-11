@@ -3,14 +3,14 @@
 Make a command to make a base model for training and execute it
 """
 import os
+from settings import PROJECT_DIR
 
 
 def main():
     # path settings
-    project_dir = '/extdata1/baeklab/minwoo/projects/deep-purity'
-    model_dir = f'{project_dir}/model'
+    model_dir = f'{PROJECT_DIR}/model'
     base_model_path = f'{model_dir}/base_model_190911-cnn1.hdf5'
-    brain_script = f'{project_dir}/src/brain.py'  # script for making our model
+    brain_script = f'{PROJECT_DIR}/src/brain.py'  # script for making our model
     os.makedirs(model_dir, exist_ok=True)
 
     # Execution

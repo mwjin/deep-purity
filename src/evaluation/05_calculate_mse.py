@@ -5,6 +5,7 @@ Evaluate the results of prediction by calculating the mean squared error (MSE) f
 * Prerequisite
     1. Run 04_test_model.py
 """
+from settings import PROJECT_DIR
 
 
 def main():
@@ -15,8 +16,7 @@ def main():
     tumor_purities = list(range(5, 100, 5))
 
     # path settings
-    project_dir = '/extdata1/baeklab/minwoo/projects/deep-purity'
-    pred_result_dir = f'{project_dir}/results/prediction/{model_ver}'  # input
+    pred_result_dir = f'{PROJECT_DIR}/results/prediction/{model_ver}'  # input
     mse_result_path = f'{pred_result_dir}/mse_{depth}.txt'  # output
 
     with open(mse_result_path, 'w') as outfile:

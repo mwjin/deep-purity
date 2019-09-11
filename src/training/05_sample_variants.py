@@ -8,13 +8,11 @@ The TSV files will be used as data sets for learning
 """
 from lab.job import Job, qsub_sge
 from lab.utils import time_stamp, eprint
+from settings import PROJECT_DIR
 
 import pandas as pd
 import os
 import sys
-
-# constants
-PROJECT_DIR = '/extdata4/baeklab/minwoo/projects/deep-purity'
 
 
 def main():

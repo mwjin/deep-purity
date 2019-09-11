@@ -8,12 +8,10 @@ Make images by parsing tsv files of variant samples via SGE job scheduler
 """
 from lab.job import Job, qsub_sge
 from lab.utils import time_stamp
+from settings import PROJECT_DIR
 
 import os
 import sys
-
-# constants
-PROJECT_DIR = '/extdata1/baeklab/minwoo/projects/deep-purity'
 
 
 def main():

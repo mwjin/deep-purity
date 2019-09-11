@@ -8,12 +8,12 @@ Train the base model using the learning data
 """
 import os
 import sys
+from settings import PROJECT_DIR
 
 
 def main():
     # path settings
-    project_dir = '/extdata1/baeklab/minwoo/projects/deep-purity'
-    data_list_dir = f'{project_dir}/data/learning-data-2-list'
+    data_list_dir = f'{PROJECT_DIR}/data/learning-data-2-list'
     train_data_list_path = f'{data_list_dir}/train_set_data_paths.txt'
     valid_data_list_path = f'{data_list_dir}/valid_set_data_paths.txt'
 
@@ -21,7 +21,7 @@ def main():
         sys.exit(f'[ERROR] The files for lists of learning data does not exist. '
                  f'Check the paths or run 08_make_learning_data.py')
 
-    model_dir = f'{project_dir}/model'
+    model_dir = f'{PROJECT_DIR}/model'
     base_model_path = f'{model_dir}/base_model_190911-cnn1.hdf5'
     train_model_path = f'{model_dir}/train_model_190911-cnn1.hdf5'
 
@@ -29,7 +29,7 @@ def main():
         sys.exit(f'[ERROR] The base model \'{base_model_path}\' does not exist. '
                  f'Check the path or run 09_make_model.py')
 
-    brain_script = f'{project_dir}/src/brain.py'  # script for making our model
+    brain_script = f'{PROJECT_DIR}/src/brain.py'  # script for making our model
 
     # Execution
     cmd = f'{brain_script} train_model {train_model_path} {base_model_path} ' \

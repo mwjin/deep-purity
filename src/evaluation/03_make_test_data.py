@@ -10,9 +10,7 @@ Make data to test using all variants in each cell line
 
 import os
 import sys
-
-# constants
-PROJECT_DIR = '/extdata1/baeklab/minwoo/projects/deep-purity'
+from settings import PROJECT_DIR
 
 
 def main():

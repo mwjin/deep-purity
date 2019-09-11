@@ -7,6 +7,7 @@ Test the trained model by predicting purities of the test data
 """
 import os
 import sys
+from settings import PROJECT_DIR
 
 
 def main():
@@ -18,19 +19,18 @@ def main():
     model_ver = '190911-cnn1'
 
     # path settings
-    project_dir = '/extdata1/baeklab/minwoo/projects/deep-purity'
-    test_data_list_dir = f'{project_dir}/data/test-data-2-list'
-    result_dir = f'{project_dir}/results/prediction/{model_ver}'
+    test_data_list_dir = f'{PROJECT_DIR}/data/test-data-2-list'
+    result_dir = f'{PROJECT_DIR}/results/prediction/{model_ver}'
     os.makedirs(result_dir, exist_ok=True)
 
-    model_dir = f'{project_dir}/model'
+    model_dir = f'{PROJECT_DIR}/model'
     train_model_path = f'{model_dir}/train_model_{model_ver}.hdf5'
 
     if not os.path.isfile(train_model_path):
         sys.exit(f'[ERROR] The base model \'{train_model_path}\' does not exist. '
                  f'Check the path or run training/10_train_model.py')
 
-    brain_script = f'{project_dir}/src/brain.py'  # script for making our model
+    brain_script = f'{PROJECT_DIR}/src/brain.py'  # script for making our model
 
     for cell_line in cell_lines:
         print(f'[LOG] --- Cell line: {cell_line}', file=sys.stderr)

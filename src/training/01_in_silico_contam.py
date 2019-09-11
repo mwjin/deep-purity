@@ -6,13 +6,13 @@ This script is used to mix normal reads (a%) and tumor reads ((1 - a)%) then mak
 from random import randint
 from lab.job import Job, qsub_sge
 from lab.utils import time_stamp
+from settings import PROJECT_DIR
 
 import os
 import sys
 
 # constants
 SEED = randint(0, 1000000)
-PROJECT_DIR = '/extdata4/baeklab/minwoo/projects/deep-purity'
 
 
 def main():

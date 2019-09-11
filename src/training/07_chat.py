@@ -8,12 +8,10 @@ From the variant sample files, extract only germline variants hetero in normal a
 """
 from lab.job import Job, qsub_sge
 from lab.utils import time_stamp
+from settings import PROJECT_DIR
 
 import os
 import sys
-
-# constants
-PROJECT_DIR = '/extdata4/baeklab/minwoo/projects/deep-purity'
 
 
 def main():
