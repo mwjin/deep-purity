@@ -26,14 +26,22 @@ def main():
     log_dir = f'{PROJECT_DIR}/log/{job_name_prefix}/{time_stamp()}'
 
     # param settings
-    cell_line = 'HCC1143'
-    depth = '30x'
+    cell_line = 'HG002-HG004'
+    depth = '150x'
 
     # path settings
     # input
-    in_bam_dir = f'/extdata4/baeklab/minwoo/data/TCGA-HCC-DEPTH-NORM-MIX/{cell_line}/{depth}'
-    norm_bam_path = f'/extdata4/baeklab/minwoo/data/TCGA-HCC-DEPTH-NORM/' \
-                    f'{cell_line}/{cell_line}.NORMAL.{depth}.bam'  # ctrl
+    if cell_line.startswith('HCC'):
+        in_bam_dir = f'/extdata4/baeklab/minwoo/data/TCGA-HCC-DEPTH-NORM-MIX/{cell_line}/{depth}'
+        norm_bam_path = f'/extdata4/baeklab/minwoo/data/TCGA-HCC-DEPTH-NORM/' \
+                        f'{cell_line}/{cell_line}.NORMAL.{depth}.bam'  # ctrl
+    else: # for GIAB
+        in_bam_dir = f'/extdata4/baeklab/minwoo/data/giab-mix/{cell_line}/{depth}'
+
+        if cell_line.endswith('003'):
+            norm_bam_path = f'/extdata4/baeklab/minwoo/data/giab/illumina-paired-wes/{depth}/HG003_NA24149_father.bam'
+        else:
+            norm_bam_path = f'/extdata4/baeklab/minwoo/data/giab/illumina-paired-wes/{depth}/HG004_NA24143_mother.bam'
 
     # output
     out_dir = f'{PROJECT_DIR}/data/mutect-output-depth-norm/{cell_line}/{depth}'
@@ -44,6 +52,8 @@ def main():
         'HCC1954': '/extdata6/Minwoo/data/ref-genome/hg19/Homo_sapiens_assembly19.fasta',
         'HCC1187': '/extdata6/Beomman/raw-data/ref/Homo_sapiens/NCBI/GRCh38Decoy/Sequence/WholeGenomeFasta/genome.fa',
         'HCC2218': '/extdata6/Beomman/raw-data/ref/Homo_sapiens/NCBI/GRCh38Decoy/Sequence/WholeGenomeFasta/genome.fa',
+        'HG002-HG003': '/extdata6/Minwoo/data/ref-genome/hg19/Homo_sapiens_assembly19.fasta',
+        'HG002-HG004': '/extdata6/Minwoo/data/ref-genome/hg19/Homo_sapiens_assembly19.fasta',
     }
 
     dbsnp_dict = {
@@ -51,6 +61,8 @@ def main():
         'HCC1954': '/extdata6/Beomman/raw-data/dbsnp/dbsnp150/compressed/hg19/common_all_20170710.hg19.vcf.gz',
         'HCC1187': '/extdata6/Beomman/raw-data/dbsnp/dbsnp150/compressed/hg38/common_all_20170710.hg38.vcf.gz',
         'HCC2218': '/extdata6/Beomman/raw-data/dbsnp/dbsnp150/compressed/hg38/common_all_20170710.hg38.vcf.gz',
+        'HG002-HG003': '/extdata6/Beomman/raw-data/dbsnp/dbsnp150/compressed/hg19/common_all_20170710.hg19.vcf.gz',
+        'HG002-HG004': '/extdata6/Beomman/raw-data/dbsnp/dbsnp150/compressed/hg19/common_all_20170710.hg19.vcf.gz',
     }
 
     # constant paths for mutect
