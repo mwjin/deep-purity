@@ -33,7 +33,7 @@ def main():
     }
     depth_dict = {
         'tcga-benchmark4': ['30x'],
-        'giab': ['100x', '150x'],
+        'giab': ['30x', '100x', '150x'],
     }
     benchmark = benchmark_list[1]
     cell_lines = cell_line_dict[benchmark]
@@ -76,10 +76,10 @@ def main():
                 # in-loop path settings
                 purity_tag = f'n{int(contam)}t{int(purity)}'
 
-                if benchmark == 'giab':
+                if benchmark == 'tcga-benchmark4':
                     out_bam_path = f'{out_bam_dir}/{cell_line}.{purity_tag}.{depth}.bam'
-                else:
-                    out_bam_path = f'{out_bam_dir}/HG001-{cell_line.split("_")[0]}.{purity_tag}.{depth}.bam'
+                else:  # GIAB
+                    out_bam_path = f'{out_bam_dir}/HG002-{cell_line.split("_")[0]}.{purity_tag}.{depth}.bam'
 
                 tumor_temp_bam_path = f'{temp_dir}/{os.path.basename(tumor_bam_path)}'
                 tumor_temp_bam_path = tumor_temp_bam_path.replace('.bam', '.%d%%.bam' % purity)
