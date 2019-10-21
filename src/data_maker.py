@@ -56,12 +56,14 @@ def main():
     vaf_lrr_image = chat_result_df.to_numpy()
     vaf_lrr_image = normalize_image(vaf_lrr_image)
     vaf_lrr_image = vaf_lrr_image[:, :, np.newaxis]  # expand the dimension
+    est_purities = chat_result_df['est_purity'].values
     del chat_result_df
 
     # store the vaf histogram
     with h5py.File(out_data_path, 'w') as outfile:
         outfile.create_dataset('vaf_hist_array', data=vaf_hist)
         outfile.create_dataset('vaf_lrr_image', data=vaf_lrr_image)
+        outfile.create_dataset('est_purities', data=est_purities)
         outfile.create_dataset('tumor_purity', data=tumor_purity)
 
 
