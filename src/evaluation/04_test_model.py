@@ -1,4 +1,4 @@
-#!/home/sonic/baeklab/Hyeonseong/anaconda3/envs/minwoo/bin/python
+#!/usr/bin/env python3
 """
 Test the trained model by predicting purities of the test data
 

@@ -1,4 +1,4 @@
-#!/home/sonic/baeklab/Hyeonseong/anaconda3/envs/minwoo/bin/python
+#!/usr/bin/env python3
 """
 From the variant sample files, extract only germline variants hetero in normal and segment the genome like CHAT
 (Li and Li., Genome Biology, 2014)

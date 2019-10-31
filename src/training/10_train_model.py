@@ -1,4 +1,4 @@
-#!/home/sonic/baeklab/Hyeonseong/anaconda3/envs/minwoo/bin/python
+#!/usr/bin/env python3
 """
 Train the base model using the learning data
 

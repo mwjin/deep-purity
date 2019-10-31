@@ -1,4 +1,4 @@
-#!/home/sonic/baeklab/Hyeonseong/anaconda3/envs/minwoo/bin/python
+#!/usr/bin/env python3
 """
 Execute Mutect (Cibulskis et al., 2013, Nat. Biotech.) to call the variants from our normal contaminated bam files.
 

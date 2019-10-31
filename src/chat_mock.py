@@ -1,4 +1,4 @@
-#!/extdata6/Doyeon/anaconda3/envs/deep-purity/bin/python3.6
+#!/usr/bin/env python3
 """
 Estimate purity via CHAT algorithm (Li and Li., Genome Biology, 2014)
 """

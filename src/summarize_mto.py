@@ -1,4 +1,4 @@
-#!/extdata6/Doyeon/anaconda3/envs/deep-purity/bin/python3.6
+#!/usr/bin/env python3
 """
 From MTO (MuTect output) file, extract and store essential information of the passed variants as .tsv file.
 This is for reducing memory overhead.

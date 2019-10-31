@@ -1,4 +1,4 @@
-#!/home/sonic/baeklab/Hyeonseong/anaconda3/envs/minwoo/bin/python
+#!/usr/bin/env python3
 """
 From MTO file, randomly sample variants, then store essential information of the variants as TSV file.
 The TSV files will be used as data sets for learning

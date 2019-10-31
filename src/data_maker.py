@@ -1,4 +1,4 @@
-#!/extdata6/Doyeon/anaconda3/envs/deep-purity/bin/python3.6
+#!/usr/bin/env python3
 """
 Make data for training or testing our deep learning model
 

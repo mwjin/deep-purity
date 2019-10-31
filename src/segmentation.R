@@ -1,4 +1,4 @@
-#!/extdata6/Doyeon/anaconda3/envs/deep-purity/bin/Rscript
+#!/usr/bin/env Rscript
 # Title     : segmentation.R
 # Objective : Segmentation of a genome like CHAT (Li and Li., Genome Biology, 2014)
 # Created by: Minwoo Jeong
