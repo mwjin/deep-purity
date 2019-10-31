@@ -3,7 +3,7 @@
 Test the trained model by predicting purities of the test data
 
 * Prerequisite
-    1. Run 03_make_test_data.py
+    1. Run 01_make_test_data.py
 """
 import os
 import sys
@@ -16,19 +16,19 @@ def main():
     # param settings
     cell_lines = ['HCC1143', 'HCC1954', 'HCC1187', 'HCC2218']
     depth = '30x'
-    model_ver = '190911-cnn1'
+    model_ver = 'default'
 
     # path settings
-    test_data_list_dir = f'{PROJECT_DIR}/data/test-data-2-list'
+    test_data_list_dir = f'{PROJECT_DIR}/data/test-data-list'
     result_dir = f'{PROJECT_DIR}/results/prediction/{model_ver}'
     os.makedirs(result_dir, exist_ok=True)
 
     model_dir = f'{PROJECT_DIR}/model'
-    train_model_path = f'{model_dir}/train_model_{model_ver}.hdf5'
+    train_model_path = f'{model_dir}/train_model.hdf5'
 
     if not os.path.isfile(train_model_path):
         sys.exit(f'[ERROR] The base model \'{train_model_path}\' does not exist. '
-                 f'Check the path or run training/10_train_model.py')
+                 f'Check the path or run training/08_train_model.py')
 
     brain_script = f'{PROJECT_DIR}/src/brain.py'  # script for making our model
 
@@ -40,12 +40,13 @@ def main():
 
         if not os.path.isfile(test_data_list_path):
             sys.exit(f'[ERROR] The files for lists of learning data does not exist. '
-                     f'Check the paths or run 03_make_test_data.py')
+                     f'Check the paths or run 01_make_test_data.py')
 
         # Execution
         cmd = f'{brain_script} test_model {result_path} {train_model_path} {test_data_list_path};'
         print(cmd)
         os.system(cmd)
+
 
 if __name__ == "__main__":
     main()

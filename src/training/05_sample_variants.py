@@ -33,7 +33,6 @@ def main():
 
     # param settings
     num_rand_somatic = 10000  # No. randomly sampled somatic variants
-    num_rand_germline = 150000  # No. randomly sampled germline variants heterozygous in normal
     num_sampling = 1000  # No. attempts of sampling
 
     variant_classes = ['train-set', 'valid-set']
@@ -69,8 +68,7 @@ def main():
 
                     for i in range(num_sampling):
                         out_tsv_path = f'{out_sample_dir}/random_variants_{i+1:04}.tsv'
-                        cmd += f'{script} write_variant_sample {out_tsv_path} {in_var_tsv_path} ' \
-                               f'{num_rand_somatic} {num_rand_germline};'
+                        cmd += f'{script} write_variant_sample {out_tsv_path} {in_var_tsv_path} {num_rand_somatic};'
 
                         if i % job_cnt_one_cmd == job_cnt_one_cmd - 1:
                             if is_test:
@@ -89,7 +87,7 @@ def main():
         qsub_sge(jobs, queue, log_dir)
 
 
-def write_variant_sample(out_tsv_path, in_tsv_path, num_rand_somatic, num_rand_germline):
+def write_variant_sample(out_tsv_path, in_tsv_path, num_rand_somatic):
     """
     Parse the input TSV file and randomly sample variants.
     From the variant set, get variants with top LODt score and store essential information of the variants as TSV file.
@@ -99,36 +97,23 @@ def write_variant_sample(out_tsv_path, in_tsv_path, num_rand_somatic, num_rand_g
     :param out_tsv_path: a path of an output TSV file
     :param in_tsv_path: a path of a input TSV file
     :param num_rand_somatic: No. of randomly sampled somatic variants
-    :param num_rand_germline: No. of randomly sampled germline variants heterozygous in normal
     """
     num_rand_somatic = int(num_rand_somatic)
-    num_rand_germline = int(num_rand_germline)
 
     eprint('[LOG] Parameters')
     eprint(f'[LOG] --- No. random somatic mutations: {num_rand_somatic}')
-    eprint(f'[LOG] --- No. germline somatic mutations: {num_rand_germline}')
 
     variant_df = pd.read_table(in_tsv_path)
-    somatic_variant_df = variant_df[variant_df['judgement'] == 'KEEP']
-    germline_variant_df = variant_df[variant_df['judgement'] == 'REJECT']
+    variant_df = variant_df[variant_df['judgement'] == 'KEEP']
 
     eprint('[LOG] Random sampling')
-    somatic_var_cnt = len(somatic_variant_df.index)
-    germline_var_cnt = len(germline_variant_df.index)
+    somatic_var_cnt = len(variant_df.index)
 
     if somatic_var_cnt >= num_rand_somatic:
-        somatic_variant_df = somatic_variant_df.sample(n=num_rand_somatic, replace=False)
+        variant_df = variant_df.sample(n=num_rand_somatic, replace=False)
     else:
-        somatic_variant_df = somatic_variant_df.sample(n=num_rand_somatic, replace=True)
+        variant_df = variant_df.sample(n=num_rand_somatic, replace=True)
 
-    if germline_var_cnt >= num_rand_germline:
-        germline_variant_df = germline_variant_df.sample(n=num_rand_germline, replace=False)
-    else:
-        germline_variant_df = germline_variant_df.sample(n=num_rand_germline, replace=True)
-
-    variant_df = pd.concat([somatic_variant_df.reset_index(drop=True),
-                            germline_variant_df.reset_index(drop=True)],
-                           axis=0)
     variant_df = variant_df.sort_values(by=['contig', 'position'])
     variant_df.to_csv(out_tsv_path, sep='\t', index=False)
 

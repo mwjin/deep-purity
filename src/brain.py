@@ -12,13 +12,12 @@ import tensorflow as tf
 import functools
 
 from keras import backend as kb
+from keras import regularizers
 from keras.models import Model, load_model
-from keras.layers import Dense, Flatten
-from keras.layers import Conv2D, Input, MaxPooling2D, GlobalAveragePooling2D, GlobalMaxPooling2D
+from keras.layers import Dense, Input
 from keras.callbacks import ModelCheckpoint, History, EarlyStopping
 from keras.utils import multi_gpu_model
 from data_generator import DataGenerator
-from my_callback import EarlyStoppingByLossVal
 
 # setting for the GPU
 from tensorflow import ConfigProto
@@ -37,29 +36,14 @@ def make_base_model(base_model_path):
     """
     make our model
     """
-    # build a CNN model for VAF-LRR plots
-    vaf_lrr_layer = Input(shape=(1000, 2, 1), name='vaf_lrr_image')
-    conv = \
-        Conv2D(128, (100, 2), strides=(1, 2), kernel_initializer='he_uniform', activation='relu',
-               padding="valid", name='conv_1')(vaf_lrr_layer)
-    conv = GlobalAveragePooling2D()(conv)
-    conv = Dense(32, kernel_initializer='he_uniform', activation='relu', name='fc_2')(conv)
-    vaf_lrr_cnn_model = Model(inputs=[vaf_lrr_layer], outputs=conv)
+    input_layer = Input(shape=(101,), name='vaf_hist_array')
+    hidden_layer = Dense(512, kernel_initializer='he_uniform', activation='relu',
+                         kernel_regularizer=regularizers.l2(0.0))(input_layer)
+    hidden_layer = Dense(256, kernel_initializer='he_uniform', activation='relu',
+                         kernel_regularizer=regularizers.l2(0.0))(hidden_layer)
+    output_layer = Dense(1, activation=None, name='output')(hidden_layer.output)
 
-    # build a fully connected layer for VAF histograms of somatic mutations
-    """
-    vaf_hist_layer = Input(shape=(101,), name='vaf_hist_array')
-    full_conn_layer = Dense(512, kernel_initializer='he_uniform', activation='relu',
-                            kernel_regularizer=regularizers.l2(0.0))(vaf_hist_input)
-    full_conn_out = Dense(512, kernel_initializer='he_uniform', activation='relu',
-                            kernel_regularizer=regularizers.l2(0.0))(full_conn_layer)
-    """
-
-    # concatenate two models
-    # concat_layer = concatenate([vaf_lrr_cnn_model.output, full_conn_out])
-    pred_out_layer = Dense(1, activation=None, name='output')(vaf_lrr_cnn_model.output)
-
-    model = Model(inputs=[vaf_lrr_layer], outputs=pred_out_layer)
+    model = Model(inputs=[input_layer], outputs=output_layer)
     multi_gpu_model(model, gpus=4)
     model.compile(loss='mean_squared_error', optimizer='adam')
 
@@ -88,7 +72,7 @@ def train_model(train_model_path, base_model_path,
 
     params = {
         'batch_size': BATCH_SIZE,
-        'input_keys': ['vaf_hist_array', 'vaf_lrr_image'],
+        'input_keys': ['vaf_hist_array'],
         'output_key': 'tumor_purity',
         'shuffle': True
     }
@@ -131,7 +115,7 @@ def test_model(test_result_path, train_model_path, test_data_list_path):
 
     params = {
         'batch_size': 1,
-        'input_keys': ['vaf_hist_array', 'vaf_lrr_image'],
+        'input_keys': ['vaf_hist_array'],
         'output_key': 'tumor_purity',
         'shuffle': False
     }

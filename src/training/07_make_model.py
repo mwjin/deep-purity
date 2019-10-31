@@ -9,7 +9,7 @@ from settings import PROJECT_DIR
 def main():
     # path settings
     model_dir = f'{PROJECT_DIR}/model'
-    base_model_path = f'{model_dir}/base_model_190911-cnn1.hdf5'
+    base_model_path = f'{model_dir}/base_model.hdf5'
     brain_script = f'{PROJECT_DIR}/src/brain.py'  # script for making our model
     os.makedirs(model_dir, exist_ok=True)
 
