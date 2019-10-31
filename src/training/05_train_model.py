@@ -3,8 +3,8 @@
 Train the base model using the learning data
 
 * Prerequisite
-    1. Run 06_make_learning_data.py
-    2. Run 07_make_model.py
+    1. Run 03_make_learning_data.py
+    2. Run 04_make_model.py
 """
 import os
 import sys
@@ -19,7 +19,7 @@ def main():
 
     if not os.path.isfile(train_data_list_path) or not os.path.isfile(valid_data_list_path):
         sys.exit(f'[ERROR] The files for lists of learning data does not exist. '
-                 f'Check the paths or run 06_make_learning_data.py')
+                 f'Check the paths or run 03_make_learning_data.py')
 
     model_dir = f'{PROJECT_DIR}/model'
     base_model_path = f'{model_dir}/base_model.hdf5'
@@ -27,7 +27,7 @@ def main():
 
     if not os.path.isfile(base_model_path):
         sys.exit(f'[ERROR] The base model \'{base_model_path}\' does not exist. '
-                 f'Check the path or run 07_make_model.py')
+                 f'Check the path or run 04_make_model.py')
 
     brain_script = f'{PROJECT_DIR}/src/brain.py'  # script for making our model
 

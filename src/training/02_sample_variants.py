@@ -4,7 +4,7 @@ From MTO file, randomly sample variants, then store essential information of the
 The TSV files will be used as data sets for learning
 
 * Prerequisite
-    1. Run 04_classify_variants.py
+    1. Run 01_classify_variants.py
 """
 from lab.job import Job, qsub_sge
 from lab.utils import time_stamp, eprint

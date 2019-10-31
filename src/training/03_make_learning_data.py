@@ -3,7 +3,7 @@
 Make data by parsing tsv files of variant samples via SGE job scheduler
 
 * Prerequisite
-    1. Run 05_sample_variants.py
+    1. Run 02_sample_variants.py
 """
 from lab.job import Job, qsub_sge
 from lab.utils import time_stamp

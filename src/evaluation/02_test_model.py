@@ -28,7 +28,7 @@ def main():
 
     if not os.path.isfile(train_model_path):
         sys.exit(f'[ERROR] The base model \'{train_model_path}\' does not exist. '
-                 f'Check the path or run training/08_train_model.py')
+                 f'Check the path or run training/05_train_model.py')
 
     brain_script = f'{PROJECT_DIR}/src/brain.py'  # script for making our model
 
