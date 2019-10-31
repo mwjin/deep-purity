@@ -1,5 +1,9 @@
-## DeepPurity
-A tool for estimating tumor purity of the cancer genome data based on a deep learning model.  
+# DeepPurity
+A tool to estimate tumor purity of tumor samples based on the deep learning model  
+***Note**: This project has stopped due to a lack of cancer genome data for the deep learning.*
+
+The documentation below is the previous documentation of this project.
+***
 
 ## **Dependencies**  
 python >= 3.6.5  
